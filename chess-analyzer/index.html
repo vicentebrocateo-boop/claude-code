@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Revisão de Partidas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+Symbols+2&display=swap">
+<style>
+/* Layout: two-column review desk (board + eval bar | report panel), collapsing to one column on phones. */
+:root {
+  --bg: #eef0f3;
+  --panel: #ffffff;
+  --panel-2: #f5f6f8;
+  --line: #d9dde4;
+  --fg: #16202c;
+  --muted: #5d6877;
+  --accent: #1f7a8c;
+  --accent-fg: #ffffff;
+  --sq-light: #e9dcc3;
+  --sq-dark: #a98461;
+  --sq-hl: rgba(255, 214, 77, .55);
+  --eval-white: #f4f4f2;
+  --eval-black: #2b2f36;
+  --c-brilliant: #1bada6;
+  --c-great: #5c8bb0;
+  --c-best: #81b64c;
+  --c-excellent: #96bc4b;
+  --c-good: #77915f;
+  --c-forced: #8a8f98;
+  --c-inaccuracy: #e6ae2e;
+  --c-mistake: #e5853b;
+  --c-miss: #d95f75;
+  --c-blunder: #ca3431;
+  --f-display: "Sora", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --f-piece: "Noto Sans Symbols 2", "Segoe UI Symbol", "DejaVu Sans", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12161c; --panel: #1b2129; --panel-2: #222a33; --line: #313a46;
+    --fg: #e7ebf0; --muted: #9aa5b3; --accent: #4fb3c6; --accent-fg: #0c1a1e;
+    --sq-light: #d6c7aa; --sq-dark: #8e6c4e; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12161c; --panel: #1b2129; --panel-2: #222a33; --line: #313a46;
+  --fg: #e7ebf0; --muted: #9aa5b3; --accent: #4fb3c6; --accent-fg: #0c1a1e;
+  --sq-light: #d6c7aa; --sq-dark: #8e6c4e; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--fg); font: 15px/1.5 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 48px;
+}
+[hidden] { display: none !important; }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 20px; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; }
+h1 { font-size: 1.7rem; letter-spacing: -.01em; }
+h2 { font-size: 1.15rem; }
+.muted { color: var(--muted); }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px; }
+header.top p { margin: 4px 0 0; max-width: 62ch; }
+
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
+.search { display: grid; gap: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.field { display: grid; gap: 4px; }
+.field label { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+input[type=text], select, textarea {
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; min-width: 0;
+}
+input[type=text] { width: min(320px, 100%); }
+textarea { width: 100%; min-height: 120px; font-family: var(--f-mono); font-size: .85rem; }
+.btn { background: var(--accent); color: var(--accent-fg); border: 0; border-radius: 8px; padding: 10px 16px; font-weight: 600; }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line); }
+.linkish { background: none; border: 0; color: var(--accent); padding: 0; font-weight: 500; }
+.status { font-size: .9rem; color: var(--muted); min-height: 1.5em; }
+.status.err { color: var(--c-blunder); }
+
+.games { display: grid; gap: 8px; }
+.game {
+  display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; text-align: left;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; width: 100%;
+}
+.game:hover { border-color: var(--accent); }
+.res { width: 30px; height: 30px; border-radius: 6px; display: grid; place-items: center; font-weight: 700; font-family: var(--f-mono); font-size: .85rem; color: #fff; }
+.res.win { background: var(--c-best); } .res.loss { background: var(--c-blunder); } .res.draw { background: var(--c-forced); }
+.game .who { min-width: 0; }
+.game .who b { font-weight: 600; }
+.game .meta { font-size: .82rem; color: var(--muted); text-align: right; }
+
+/* Review */
+.review { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 420px); gap: 20px; align-items: start; }
+@media (max-width: 900px) { .review { grid-template-columns: minmax(0, 1fr); } }
+.boardcol { display: grid; gap: 10px; min-width: 0; }
+.player { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-weight: 600; }
+.player .rt { color: var(--muted); font-weight: 400; }
+.boardbox { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; }
+.evalbar { position: relative; border-radius: 4px; overflow: hidden; background: var(--eval-black); border: 1px solid var(--line); }
+.evalbar .w { position: absolute; left: 0; right: 0; bottom: 0; background: var(--eval-white); transition: height .35s ease; }
+.evalbar.flip .w { bottom: auto; top: 0; }
+.evalbar .lbl { position: absolute; left: 0; right: 0; font: 600 9px/1 var(--f-mono); text-align: center; z-index: 2; padding: 3px 0; }
+.evalbar .lbl.bottom { bottom: 0; color: var(--eval-black); }
+.evalbar .lbl.top { top: 0; color: var(--eval-white); }
+.board { position: relative; width: 100%; max-width: 640px; aspect-ratio: 1; display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr); container-type: inline-size; border-radius: 4px; overflow: hidden; user-select: none; }
+.sq { position: relative; display: grid; place-items: center; min-height: 0; min-width: 0; }
+.sq.l { background: var(--sq-light); } .sq.d { background: var(--sq-dark); }
+.sq.hl::after { content: ""; position: absolute; inset: 0; background: var(--sq-hl); }
+.sq .pc { position: relative; z-index: 1; font-family: var(--f-piece); font-size: 9.6cqw; line-height: 1; }
+.pc.w { color: #fbfbf8; -webkit-text-stroke: 1.4px #26292e; text-shadow: 0 2px 2px rgba(0,0,0,.25); }
+.pc.b { color: #1d1f23; -webkit-text-stroke: .6px #000; text-shadow: 0 2px 2px rgba(0,0,0,.25); }
+.sq .coord { position: absolute; font: 600 10px/1 var(--f-mono); z-index: 1; opacity: .8; }
+.sq.l .coord { color: var(--sq-dark); } .sq.d .coord { color: var(--sq-light); }
+.coord.f { right: 3px; bottom: 2px; } .coord.r { left: 3px; top: 3px; }
+.badge-on-sq { position: absolute; top: -4px; right: -4px; z-index: 3; width: 24px; height: 24px; font-size: 11px; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
+svg.arrows { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
+.controls { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.controls .btn.ghost { min-width: 52px; font-family: var(--f-mono); }
+
+.panel { display: grid; gap: 14px; min-width: 0; }
+.cls { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; color: #fff; font: 700 10px/1 var(--f-mono); flex: none; }
+.cls.brilliant { background: var(--c-brilliant); } .cls.great { background: var(--c-great); }
+.cls.best { background: var(--c-best); } .cls.excellent { background: var(--c-excellent); }
+.cls.good { background: var(--c-good); } .cls.forced { background: var(--c-forced); }
+.cls.inaccuracy { background: var(--c-inaccuracy); } .cls.mistake { background: var(--c-mistake); }
+.cls.miss { background: var(--c-miss); } .cls.blunder { background: var(--c-blunder); }
+
+.coach { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start; }
+.coach .cls { width: 34px; height: 34px; font-size: 13px; }
+.coach p { margin: 0; }
+.coach .ev { font-size: .85rem; color: var(--muted); margin-top: 2px; }
+
+.acc { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; text-align: center; }
+.acc .num { font: 700 2rem/1 var(--f-display); font-variant-numeric: tabular-nums; padding: 10px 0; border-radius: 8px; }
+.acc .num.w { background: var(--eval-white); color: var(--eval-black); border: 1px solid var(--line); }
+.acc .num.b { background: var(--eval-black); color: var(--eval-white); }
+.acc .nm { font-size: .82rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acc .mid { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+
+table.tally { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+table.tally td { padding: 4px 6px; border-top: 1px solid var(--line); }
+table.tally td.n { text-align: center; font-family: var(--f-mono); font-weight: 600; width: 56px; }
+table.tally td.lab { display: flex; gap: 8px; align-items: center; }
+table.tally tr.zero td.n { opacity: .35; }
+
+.graph { width: 100%; height: 110px; display: block; cursor: pointer; border-radius: 6px; overflow: hidden; }
+.moves { max-height: 340px; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; }
+.mrow { display: grid; grid-template-columns: 44px 1fr 1fr; align-items: center; }
+.mrow:nth-child(odd) { background: var(--panel-2); }
+.mrow .no { color: var(--muted); font-family: var(--f-mono); font-size: .82rem; padding-left: 10px; }
+.mv { display: flex; align-items: center; gap: 6px; background: none; border: 0; padding: 6px 8px; text-align: left; font-family: var(--f-mono); font-size: .9rem; border-radius: 4px; }
+.mv .cls { width: 18px; height: 18px; font-size: 8px; }
+.mv.cur { background: var(--accent); color: var(--accent-fg); }
+.mv:hover:not(.cur) { background: var(--line); }
+
+.progress { height: 8px; background: var(--panel-2); border-radius: 99px; overflow: hidden; border: 1px solid var(--line); }
+.progress > div { height: 100%; background: var(--accent); width: 0; transition: width .2s; }
+.opening { font-size: .85rem; color: var(--muted); }
+.note { font-size: .82rem; color: var(--muted); max-width: 70ch; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Revisão de Partidas</h1>
+      <p class="muted">Digite seu usuário do chess.com, escolha uma partida e o Stockfish analisa cada lance: precisão, erros, lances brilhantes e o que você deveria ter jogado.</p>
+    </div>
+    <button class="btn ghost" id="backBtn" hidden>← Outras partidas</button>
+  </header>
+
+  <section class="card search" id="searchCard">
+    <form class="row" id="userForm" autocomplete="off">
+      <div class="field">
+        <label for="username">Usuário do chess.com</label>
+        <input type="text" id="username" placeholder="ex.: hikaru" required>
+      </div>
+      <div class="field">
+        <label for="depth">Profundidade</label>
+        <select id="depth">
+          <option value="12">Rápida (12)</option>
+          <option value="16" selected>Normal (16)</option>
+          <option value="20">Profunda (20)</option>
+          <option value="24">Muito profunda (24)</option>
+        </select>
+      </div>
+      <div class="field"><label>&nbsp;</label><button class="btn" id="fetchBtn" type="submit">Buscar partidas</button></div>
+    </form>
+    <div class="status" id="status"></div>
+    <div><button class="linkish" id="pgnToggle" type="button">Ou cole um PGN</button></div>
+    <div id="pgnBox" hidden class="search">
+      <textarea id="pgnInput" placeholder="[Event &quot;Live Chess&quot;]&#10;1. e4 e5 2. Nf3 ..."></textarea>
+      <div><button class="btn" id="pgnBtn" type="button">Analisar PGN</button></div>
+    </div>
+  </section>
+
+  <section id="gamesSec" hidden class="search">
+    <h2 id="gamesTitle">Partidas recentes</h2>
+    <div class="games" id="games"></div>
+  </section>
+
+  <section id="reviewSec" hidden class="review">
+    <div class="boardcol">
+      <div class="player" id="topPlayer"></div>
+      <div class="boardbox">
+        <div class="evalbar" id="evalbar"><div class="w" id="evalW"></div><div class="lbl top" id="evalTop"></div><div class="lbl bottom" id="evalBot"></div></div>
+        <div class="board" id="board"></div>
+      </div>
+      <div class="player" id="botPlayer"></div>
+      <div class="controls">
+        <button class="btn ghost" id="bStart" title="Início">|◀</button>
+        <button class="btn ghost" id="bPrev" title="Lance anterior (←)">◀</button>
+        <button class="btn ghost" id="bNext" title="Próximo lance (→)">▶</button>
+        <button class="btn ghost" id="bEnd" title="Fim">▶|</button>
+        <button class="btn ghost" id="bFlip" title="Girar tabuleiro">⇅</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="card" id="progressCard">
+        <div class="row" style="justify-content:space-between"><b>Analisando com Stockfish…</b><span class="mono" id="progTxt">0%</span></div>
+        <div class="progress" style="margin-top:8px"><div id="progBar"></div></div>
+        <p class="note" id="progNote">Carregando o motor…</p>
+      </div>
+      <div class="card coach" id="coach" hidden></div>
+      <div class="card" id="summary" hidden>
+        <div class="opening" id="opening"></div>
+        <div class="acc" style="margin-top:10px">
+          <div><div class="nm" id="accWName"></div><div class="num w" id="accW">–</div></div>
+          <div class="mid">Precisão</div>
+          <div><div class="nm" id="accBName"></div><div class="num b" id="accB">–</div></div>
+        </div>
+        <table class="tally" id="tally" style="margin-top:12px"></table>
+      </div>
+      <div class="card" style="padding:10px" id="graphCard" hidden>
+        <svg class="graph" id="graph" viewBox="0 0 400 110" preserveAspectRatio="none" role="img" aria-label="Gráfico de avaliação"></svg>
+      </div>
+      <div class="moves" id="moves"></div>
+    </div>
+  </section>
+
+  <p class="note">Os dados vêm da API pública do chess.com e a análise roda no seu navegador com o Stockfish 10 (WebAssembly). Nada é enviado para servidores. A classificação dos lances usa a perda de chance de vitória por lance, então os resultados ficam próximos, mas não idênticos, aos do chess.com.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<script>
+"use strict";
+const SF_JS = "https://cdn.jsdelivr.net/npm/stockfish@10.0.2/src/stockfish.js";
+const SF_WASM = "https://cdn.jsdelivr.net/npm/stockfish@10.0.2/src/stockfish.wasm";
+const SF_ASM = "https://cdn.jsdelivr.net/npm/stockfish@10.0.2/src/stockfish.asm.js";
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/* ---------- Classification metadata ---------- */
+const CLS = {
+  brilliant:  { sym: "!!", name: "Brilhante",  txt: "é brilhante!" },
+  great:      { sym: "!",  name: "Ótimo",      txt: "é um ótimo lance, o único que mantém a vantagem." },
+  best:       { sym: "★",  name: "Melhor",     txt: "é o melhor lance." },
+  excellent:  { sym: "✓",  name: "Excelente",  txt: "é excelente." },
+  good:       { sym: "✓",  name: "Bom",        txt: "é bom." },
+  forced:     { sym: "□",  name: "Forçado",    txt: "é forçado, o único lance legal." },
+  inaccuracy: { sym: "?!", name: "Imprecisão", txt: "é uma imprecisão." },
+  mistake:    { sym: "?",  name: "Erro",       txt: "é um erro." },
+  miss:       { sym: "✕",  name: "Chance perdida", txt: "deixa passar a chance de punir o erro do adversário." },
+  blunder:    { sym: "??", name: "Capivarada", txt: "é uma capivarada." },
+};
+const TALLY_ORDER = ["brilliant", "great", "best", "excellent", "good", "forced", "inaccuracy", "mistake", "miss", "blunder"];
+const PIECE_VAL = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
+const GLYPH = { k: "♚", q: "♛", r: "♜", b: "♝", n: "♞", p: "♟︎" };
+
+/* ---------- Engine ---------- */
+class Engine {
+  constructor() { this.listeners = []; this.ready = this._boot(); }
+  _spawn(src, hash) {
+    const blob = new Blob([`importScripts(${JSON.stringify(src)});`], { type: "application/javascript" });
+    return new Worker(URL.createObjectURL(blob) + (hash ? "#" + hash : ""));
+  }
+  async _boot() {
+    const tryStart = (w) => new Promise((res, rej) => {
+      const t = setTimeout(() => rej(new Error("timeout")), 25000);
+      w.onerror = (e) => { clearTimeout(t); rej(e); };
+      w.onmessage = (e) => { if (String(e.data).startsWith("uciok")) { clearTimeout(t); res(w); } };
+      w.postMessage("uci");
+    });
+    let w;
+    try {
+      if (typeof WebAssembly !== "object") throw new Error("no wasm");
+      w = await tryStart(this._spawn(SF_JS, SF_WASM));
+    } catch (e) {
+      w = await tryStart(this._spawn(SF_ASM));
+    }
+    this.w = w;
+    w.onmessage = (e) => { const line = String(e.data); this.listeners.forEach((f) => f(line)); };
+    w.onerror = null;
+    this.send("setoption name Hash value 64");
+    this.send("setoption name MultiPV value 2");
+    await this._wait("isready", (l) => l === "readyok");
+  }
+  send(c) { this.w.postMessage(c); }
+  _wait(cmd, pred, onLine) {
+    return new Promise((res) => {
+      const f = (l) => { if (onLine) onLine(l); if (pred(l)) { this.listeners = this.listeners.filter((x) => x !== f); res(l); } };
+      this.listeners.push(f);
+      this.send(cmd);
+    });
+  }
+  async analyze(fen, depth) {
+    await this.ready;
+    const lines = {};
+    this.send("position fen " + fen);
+    const bm = await this._wait("go depth " + depth, (l) => l.startsWith("bestmove"), (l) => {
+      if (!l.startsWith("info") || l.indexOf(" pv ") < 0) return;
+      const m = l.match(/ multipv (\d+)/); const k = m ? +m[1] : 1;
+      const d = +(l.match(/ depth (\d+)/) || [0, 0])[1];
+      const sc = l.match(/ score (cp|mate) (-?\d+)/); if (!sc) return;
+      if (/ (lowerbound|upperbound)/.test(l)) return;
+      const pv = l.split(" pv ")[1].trim().split(/\s+/);
+      if (!lines[k] || d >= lines[k].depth) lines[k] = { depth: d, type: sc[1], v: +sc[2], pv };
+    });
+    const best = bm.split(/\s+/)[1];
+    const out = Object.keys(lines).sort((a, b) => a - b).map((k) => lines[k]);
+    if (out.length && out[0].pv[0] !== best && best && best !== "(none)") out[0].pv = [best];
+    return { lines: out, best };
+  }
+}
+let engine = null;
+
+/* ---------- Math ---------- */
+// Score object {type, v} from side-to-move POV -> centipawns from side-to-move POV.
+function toCp(s) {
+  if (s.type === "mate") return s.v > 0 ? 10000 - s.v * 10 : -10000 - s.v * 10;
+  return s.v;
+}
+const winPct = (cp) => 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * Math.max(-4000, Math.min(4000, cp)))) - 1);
+const moveAcc = (loss) => Math.max(0, Math.min(100, 103.1668 * Math.exp(-0.04354 * loss) - 3.1669));
+
+/* ---------- State ---------- */
+const S = { game: null, plies: [], fens: [], evals: [], cls: [], idx: 0, flipped: false, user: "", token: 0 };
+
+/* ---------- chess.com fetch ---------- */
+async function getJSON(url) {
+  const r = await fetch(url);
+  if (r.status === 404) throw new Error("Usuário não encontrado no chess.com.");
+  if (!r.ok) throw new Error("O chess.com respondeu com erro " + r.status + ". Tente de novo em instantes.");
+  return r.json();
+}
+async function fetchGames(user) {
+  const status = $("status"); status.className = "status"; status.textContent = "Buscando partidas de " + user + "…";
+  const arch = await getJSON(`https://api.chess.com/pub/player/${encodeURIComponent(user.toLowerCase())}/games/archives`);
+  const urls = (arch.archives || []).slice(-3).reverse();
+  if (!urls.length) throw new Error("Esse usuário ainda não tem partidas públicas.");
+  let games = [];
+  for (const u of urls) {
+    const m = await getJSON(u);
+    games = games.concat((m.games || []).filter((g) => g.pgn && (g.rules || "chess") === "chess"));
+    if (games.length >= 30) break;
+  }
+  games.sort((a, b) => b.end_time - a.end_time);
+  return games.slice(0, 40);
+}
+function resultFor(g, user) {
+  const me = g.white.username.toLowerCase() === user.toLowerCase() ? g.white : g.black;
+  const r = me.result;
+  if (r === "win") return "win";
+  if (["agreed", "repetition", "stalemate", "insufficient", "50move", "timevsinsufficient"].includes(r)) return "draw";
+  return "loss";
+}
+function renderGames(games, user) {
+  const box = $("games"); box.innerHTML = "";
+  $("gamesTitle").textContent = `Partidas recentes de ${user} (${games.length})`;
+  const tc = { bullet: "Bullet", blitz: "Blitz", rapid: "Rápida", daily: "Diária" };
+  games.forEach((g) => {
+    const white = g.white.username.toLowerCase() === user.toLowerCase();
+    const me = white ? g.white : g.black, op = white ? g.black : g.white;
+    const res = resultFor(g, user);
+    const b = document.createElement("button");
+    b.className = "game"; b.type = "button";
+    const d = new Date(g.end_time * 1000);
+    b.innerHTML = `<span class="res ${res}">${res === "win" ? "V" : res === "loss" ? "D" : "½"}</span>
+      <span class="who"><b>${esc(me.username)}</b> <span class="muted">(${esc(me.rating)})</span> <span class="muted">vs</span> <b>${esc(op.username)}</b> <span class="muted">(${esc(op.rating)})</span><br>
+      <span class="muted" style="font-size:.82rem">${white ? "♔ Brancas" : "♚ Pretas"}</span></span>
+      <span class="meta">${esc(tc[g.time_class] || g.time_class)}<br>${d.toLocaleDateString("pt-BR")}</span>`;
+    b.addEventListener("click", () => startReview(g.pgn, user));
+    box.appendChild(b);
+  });
+  $("gamesSec").hidden = false;
+}
+
+/* ---------- PGN ---------- */
+function parsePgn(pgn) {
+  const headers = {};
+  pgn.replace(/\[(\w+)\s+"([^"]*)"\]/g, (_, k, v) => { headers[k] = v; return ""; });
+  const body = pgn.replace(/\[[^\]]*\]\s*/g, "").replace(/\{[^}]*\}/g, " ").replace(/\$\d+/g, " ");
+  const clean = Object.entries(headers).map(([k, v]) => `[${k} "${v}"]`).join("\n") + "\n\n" + body.replace(/\s+/g, " ").trim();
+  const c = new Chess();
+  if (!c.load_pgn(clean, { sloppy: true })) throw new Error("Não consegui ler esse PGN.");
+  const hist = c.history({ verbose: true });
+  const start = new Chess(headers.FEN || undefined);
+  const fens = [start.fen()];
+  hist.forEach((m) => { start.move({ from: m.from, to: m.to, promotion: m.promotion }); fens.push(start.fen()); });
+  return { headers, hist, fens };
+}
+
+/* ---------- Review ---------- */
+async function startReview(pgn, user) {
+  let parsed;
+  try { parsed = parsePgn(pgn); } catch (e) { const s = $("status"); s.className = "status err"; s.textContent = e.message; return; }
+  const token = ++S.token;
+  Object.assign(S, { game: parsed, plies: parsed.hist, fens: parsed.fens, evals: [], cls: [], idx: 0, user });
+  const h = parsed.headers;
+  S.flipped = !!user && (h.Black || "").toLowerCase() === user.toLowerCase();
+  $("searchCard").hidden = true; $("gamesSec").hidden = true; $("reviewSec").hidden = false; $("backBtn").hidden = false;
+  $("coach").hidden = true; $("summary").hidden = true; $("graphCard").hidden = true; $("progressCard").hidden = false;
+  const op = (h.ECOUrl || "").split("/openings/")[1];
+  $("opening").textContent = op ? "Abertura: " + decodeURIComponent(op).replace(/-/g, " ") : (h.ECO ? "ECO " + h.ECO : "");
+  renderAll();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+
+  if (!engine) engine = new Engine();
+  try { await engine.ready; } catch (e) {
+    $("progNote").textContent = "Não consegui carregar o Stockfish. Verifique sua conexão e se o navegador permite Web Workers (abra a página por http:// se estiver usando file://).";
+    return;
+  }
+  const depth = +$("depth").value;
+  const n = S.fens.length;
+  const t0 = performance.now();
+  for (let i = 0; i < n; i++) {
+    if (token !== S.token) return;
+    S.evals[i] = await evalPosition(S.fens[i], depth);
+    const pct = Math.round(((i + 1) / n) * 100);
+    $("progBar").style.width = pct + "%"; $("progTxt").textContent = pct + "%";
+    const el = (performance.now() - t0) / 1000, rem = (el / (i + 1)) * (n - i - 1);
+    $("progNote").textContent = `Posição ${i + 1} de ${n} · profundidade ${depth} · faltam ~${Math.ceil(rem)} s`;
+  }
+  if (token !== S.token) return;
+  classifyAll();
+  $("progressCard").hidden = true; $("summary").hidden = false; $("graphCard").hidden = false; $("coach").hidden = false;
+  renderSummary();
+  renderAll();
+}
+
+async function evalPosition(fen, depth) {
+  const c = new Chess(fen);
+  const stm = c.turn();
+  if (c.game_over()) {
+    const cp = c.in_checkmate() ? -10000 : 0; // side to move is mated
+    return { white: stm === "w" ? cp : -cp, lines: [], best: null, stm, terminal: true, mateFor: c.in_checkmate() ? (stm === "w" ? "b" : "w") : null };
+  }
+  const r = await engine.analyze(fen, depth);
+  const lines = r.lines.map((l) => ({ cp: toCp(l), raw: l, pv: l.pv }));
+  const top = lines[0] || { cp: 0, raw: { type: "cp", v: 0 }, pv: [r.best] };
+  return { white: stm === "w" ? top.cp : -top.cp, lines, best: r.best, stm, raw: top.raw };
+}
+
+// Win% for `color` from an eval record.
+const winFor = (ev, color) => winPct(color === "w" ? ev.white : -ev.white);
+
+function isSacrifice(i) {
+  const m = S.plies[i];
+  if (m.piece === "p" || m.piece === "k") return false;
+  const movedVal = PIECE_VAL[m.promotion || m.piece];
+  const capVal = m.captured ? PIECE_VAL[m.captured] : 0;
+  if (movedVal - capVal < 2) return false;
+  const after = new Chess(S.fens[i + 1]);
+  const caps = after.moves({ verbose: true }).filter((x) => x.to === m.to);
+  if (!caps.length) return false;
+  const cheapest = Math.min(...caps.map((x) => PIECE_VAL[x.piece] || 99));
+  const reply = S.evals[i + 1] && S.evals[i + 1].best;
+  const engineTakes = reply && reply.slice(2, 4) === m.to;
+  return engineTakes || cheapest < movedVal;
+}
+
+function classifyAll() {
+  S.cls = [];
+  S.acc = { w: [], b: [] };
+  for (let i = 0; i < S.plies.length; i++) {
+    const m = S.plies[i], c = m.color, ev0 = S.evals[i], ev1 = S.evals[i + 1];
+    const uci = m.from + m.to + (m.promotion || "");
+    const wb = winFor(ev0, c), wa = winFor(ev1, c);
+    const loss = Math.max(0, wb - wa);
+    const legal = new Chess(S.fens[i]).moves().length;
+    const isBest = uci === ev0.best;
+    let k;
+    if (legal === 1) k = "forced";
+    else if (isBest || loss < 1) {
+      const second = ev0.lines[1];
+      const gap = second ? winPct(ev0.lines[0].cp) - winPct(second.cp) : 0;
+      if (isSacrifice(i) && wa >= 50 && wb < 97 && loss < 2) k = "brilliant";
+      else if (isBest && second && gap >= 15 && wb < 95 && wa > 35) k = "great";
+      else k = isBest ? "best" : "excellent";
+    }
+    else if (loss < 2) k = "excellent";
+    else if (loss < 5) k = "good";
+    else if (loss < 10) k = "inaccuracy";
+    else if (loss < 20) k = "mistake";
+    else k = "blunder";
+    const prev = S.cls[i - 1];
+    if (["inaccuracy", "mistake", "blunder"].includes(k) && prev && ["mistake", "blunder", "miss"].includes(prev.k) && wb >= 60 && wa < 60) k = k === "blunder" ? "blunder" : "miss";
+    S.cls.push({ k, loss, wb, wa, uci, best: ev0.best });
+    S.acc[c].push({ acc: moveAcc(loss), wb });
+  }
+}
+
+function gameAccuracy(arr) {
+  if (!arr.length) return null;
+  const vals = arr.map((x) => x.acc);
+  const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+  const harm = vals.length / vals.reduce((a, b) => a + 1 / Math.max(b, 1), 0);
+  return (mean + harm) / 2;
+}
+
+function uciToSan(fen, uci) {
+  if (!uci) return null;
+  const c = new Chess(fen);
+  const m = c.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || "q" });
+  return m ? m.san : uci;
+}
+function pvToSan(fen, pv, max) {
+  const c = new Chess(fen), out = [];
+  for (const u of pv.slice(0, max)) { const m = c.move({ from: u.slice(0, 2), to: u.slice(2, 4), promotion: u[4] || "q" }); if (!m) break; out.push(m.san); }
+  return out;
+}
+function fmtEval(ev) {
+  if (!ev) return "";
+  if (ev.terminal) return ev.mateFor ? (ev.mateFor === "w" ? "1-0" : "0-1") : "½-½";
+  if (ev.raw && ev.raw.type === "mate") { const n = ev.raw.v * (ev.stm === "w" ? 1 : -1); return (n > 0 ? "M" : "-M") + Math.abs(n); }
+  const v = ev.white / 100; return (v > 0 ? "+" : "") + v.toFixed(1);
+}
+
+/* ---------- Rendering ---------- */
+function sqName(f, r) { return "abcdefgh"[f] + (r + 1); }
+function sqXY(sq) {
+  const f = sq.charCodeAt(0) - 97, r = +sq[1] - 1;
+  const col = S.flipped ? 7 - f : f, row = S.flipped ? r : 7 - r;
+  return [col * 12.5 + 6.25, row * 12.5 + 6.25];
+}
+function renderBoard() {
+  const fen = S.fens[S.idx] || new Chess().fen();
+  const c = new Chess(fen);
+  const last = S.idx > 0 ? S.plies[S.idx - 1] : null;
+  const cl = S.idx > 0 ? S.cls[S.idx - 1] : null;
+  const bd = $("board"); bd.innerHTML = "";
+  for (let row = 0; row < 8; row++) for (let col = 0; col < 8; col++) {
+    const f = S.flipped ? 7 - col : col, r = S.flipped ? row : 7 - row;
+    const name = sqName(f, r);
+    const d = document.createElement("div");
+    d.className = "sq " + ((f + r) % 2 ? "l" : "d");
+    if (last && (name === last.from || name === last.to)) d.classList.add("hl");
+    const p = c.get(name);
+    if (p) { const s = document.createElement("span"); s.className = "pc " + p.color; s.textContent = GLYPH[p.type]; d.appendChild(s); }
+    if (row === 7) { const k = document.createElement("span"); k.className = "coord f"; k.textContent = "abcdefgh"[f]; d.appendChild(k); }
+    if (col === 0) { const k = document.createElement("span"); k.className = "coord r"; k.textContent = r + 1; d.appendChild(k); }
+    if (cl && last && name === last.to) { const b = document.createElement("span"); b.className = "cls badge-on-sq " + cl.k; b.textContent = CLS[cl.k].sym; d.appendChild(b); }
+    bd.appendChild(d);
+  }
+  // Arrow: the better move when the played move was not best.
+  if (cl && cl.best && cl.uci !== cl.best && !["brilliant", "great", "best", "forced"].includes(cl.k)) {
+    const [x1, y1] = sqXY(cl.best.slice(0, 2)), [x2, y2] = sqXY(cl.best.slice(2, 4));
+    const ang = Math.atan2(y2 - y1, x2 - x1), L = Math.hypot(x2 - x1, y2 - y1), hx = x1 + Math.cos(ang) * (L - 3.2), hy = y1 + Math.sin(ang) * (L - 3.2);
+    const svg = `<svg class="arrows" viewBox="0 0 100 100"><defs><marker id="ah" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L4,2 L0,4 z" fill="#5fae3e" fill-opacity=".9"/></marker></defs>
+      <line x1="${x1}" y1="${y1}" x2="${hx}" y2="${hy}" stroke="#5fae3e" stroke-opacity=".85" stroke-width="2.2" stroke-linecap="round" marker-end="url(#ah)"/></svg>`;
+    bd.insertAdjacentHTML("beforeend", svg);
+  }
+}
+function renderEvalBar() {
+  const ev = S.evals[S.idx];
+  const bar = $("evalbar"); bar.classList.toggle("flip", S.flipped);
+  const w = ev ? (ev.terminal && ev.mateFor ? (ev.mateFor === "w" ? 100 : 0) : winPct(ev.white)) : 50;
+  $("evalW").style.height = w + "%";
+  const txt = ev ? fmtEval(ev) : "";
+  const whiteAhead = w >= 50;
+  // Label sits on the side that is ahead.
+  const onBottom = whiteAhead !== S.flipped;
+  $("evalBot").textContent = onBottom ? txt : ""; $("evalTop").textContent = onBottom ? "" : txt;
+  $("evalBot").style.color = whiteAhead ? "var(--eval-black)" : "var(--eval-white)";
+  $("evalTop").style.color = whiteAhead ? "var(--eval-black)" : "var(--eval-white)";
+}
+function renderPlayers() {
+  const h = S.game.headers;
+  const W = `<span>♔ ${esc(h.White || "Brancas")} <span class="rt">(${esc(h.WhiteElo || "?")})</span></span>`;
+  const B = `<span>♚ ${esc(h.Black || "Pretas")} <span class="rt">(${esc(h.BlackElo || "?")})</span></span>`;
+  const res = `<span class="mono muted">${esc(h.Result || "")}</span>`;
+  $("topPlayer").innerHTML = (S.flipped ? W : B);
+  $("botPlayer").innerHTML = (S.flipped ? B : W) + res;
+}
+function renderMoves() {
+  const box = $("moves"); box.innerHTML = "";
+  const startBlack = S.plies[0] && S.plies[0].color === "b";
+  let num = parseInt((S.fens[0].split(" ")[5]) || "1", 10);
+  let row = null;
+  S.plies.forEach((m, i) => {
+    if (m.color === "w" || !row) {
+      row = document.createElement("div"); row.className = "mrow";
+      row.innerHTML = `<span class="no">${num}.</span>`;
+      box.appendChild(row);
+      if (m.color === "b") row.appendChild(document.createElement("span"));
+    }
+    const b = document.createElement("button");
+    b.className = "mv" + (S.idx === i + 1 ? " cur" : ""); b.type = "button";
+    const cl = S.cls[i];
+    b.innerHTML = (cl ? `<span class="cls ${cl.k}">${CLS[cl.k].sym}</span>` : "") + esc(m.san);
+    b.addEventListener("click", () => go(i + 1));
+    row.appendChild(b);
+    if (m.color === "b") { num++; row = null; }
+  });
+  void startBlack;
+  const cur = box.querySelector(".cur");
+  if (cur) { const top = cur.offsetTop - box.offsetTop; if (top < box.scrollTop || top > box.scrollTop + box.clientHeight - 40) box.scrollTop = top - 120; }
+}
+function renderCoach() {
+  const box = $("coach");
+  if (!S.cls.length) return;
+  if (S.idx === 0) {
+    const h = S.game.headers;
+    box.innerHTML = `<span class="cls best">♟</span><div><p><b>Revisão pronta.</b> Use ◀ ▶ ou as setas do teclado para percorrer a partida, ou clique no gráfico.</p><p class="ev">${esc(h.White || "")} vs ${esc(h.Black || "")} · ${esc(h.Termination || h.Result || "")}</p></div>`;
+    return;
+  }
+  const i = S.idx - 1, m = S.plies[i], cl = S.cls[i], meta = CLS[cl.k];
+  const prefix = (m.color === "w" ? Math.ceil(S.idx / 2) + ". " : Math.ceil(S.idx / 2) + "… ");
+  let txt = `<b>${esc(prefix + m.san)}</b> ${meta.txt}`;
+  const bestSan = uciToSan(S.fens[i], cl.best);
+  if (!["brilliant", "great", "best", "forced"].includes(cl.k) && bestSan) {
+    const line = pvToSan(S.fens[i], (S.evals[i].lines[0] || { pv: [] }).pv, 5);
+    txt += ` O melhor era <b class="mono">${esc(bestSan)}</b>` + (line.length > 1 ? ` <span class="muted mono">(${esc(line.join(" "))})</span>` : "") + ".";
+  }
+  if (cl.k === "blunder" || cl.k === "mistake") {
+    const reply = S.evals[i + 1] && S.evals[i + 1].lines[0] ? pvToSan(S.fens[i + 1], S.evals[i + 1].lines[0].pv, 4) : [];
+    if (reply.length) txt += ` A ameaça agora é <span class="mono">${esc(reply.join(" "))}</span>.`;
+  }
+  const chg = `Chance de vitória: ${cl.wb.toFixed(0)}% → ${cl.wa.toFixed(0)}% · avaliação ${fmtEval(S.evals[S.idx])}`;
+  box.innerHTML = `<span class="cls ${cl.k}">${meta.sym}</span><div><p>${txt}</p><p class="ev mono">${esc(chg)}</p></div>`;
+}
+function renderSummary() {
+  const h = S.game.headers;
+  $("accWName").textContent = h.White || "Brancas"; $("accBName").textContent = h.Black || "Pretas";
+  const aw = gameAccuracy(S.acc.w), ab = gameAccuracy(S.acc.b);
+  $("accW").textContent = aw == null ? "–" : aw.toFixed(1); $("accB").textContent = ab == null ? "–" : ab.toFixed(1);
+  const cnt = { w: {}, b: {} };
+  S.cls.forEach((c, i) => { const col = S.plies[i].color; cnt[col][c.k] = (cnt[col][c.k] || 0) + 1; });
+  $("tally").innerHTML = TALLY_ORDER.map((k) => {
+    const a = cnt.w[k] || 0, b = cnt.b[k] || 0;
+    return `<tr class="${a + b ? "" : "zero"}"><td class="n">${a}</td><td class="lab"><span class="cls ${k}">${CLS[k].sym}</span>${CLS[k].name}</td><td class="n">${b}</td></tr>`;
+  }).join("");
+}
+function renderGraph() {
+  const g = $("graph");
+  const n = S.evals.length;
+  if (n < 2 || !S.cls.length) { g.innerHTML = ""; return; }
+  const W = 400, H = 110, x = (i) => (i / (n - 1)) * W;
+  const y = (ev) => H - (ev.terminal && ev.mateFor ? (ev.mateFor === "w" ? 100 : 0) : winPct(ev.white)) / 100 * H;
+  let d = `M0,${H} `; S.evals.forEach((ev, i) => { d += `L${x(i).toFixed(2)},${y(ev).toFixed(2)} `; }); d += `L${W},${H} Z`;
+  let dots = "";
+  S.cls.forEach((c, i) => {
+    if (["blunder", "mistake", "miss", "brilliant", "great"].includes(c.k)) dots += `<circle cx="${x(i + 1)}" cy="${y(S.evals[i + 1])}" r="3.2" fill="var(--c-${c.k})" stroke="var(--panel)" stroke-width="1"/>`;
+  });
+  const cx = x(S.idx);
+  g.innerHTML = `<rect width="${W}" height="${H}" fill="var(--eval-black)"/><path d="${d}" fill="var(--eval-white)"/>
+    <line x1="0" y1="${H / 2}" x2="${W}" y2="${H / 2}" stroke="var(--c-forced)" stroke-width=".6" stroke-dasharray="3 3"/>
+    <line x1="${cx}" y1="0" x2="${cx}" y2="${H}" stroke="var(--accent)" stroke-width="1.6"/>${dots}`;
+}
+function renderAll() { renderPlayers(); renderBoard(); renderEvalBar(); renderMoves(); renderCoach(); renderGraph(); }
+function go(i) { S.idx = Math.max(0, Math.min(S.plies.length, i)); renderBoard(); renderEvalBar(); renderMoves(); renderCoach(); renderGraph(); }
+
+/* ---------- Wiring ---------- */
+$("userForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const user = $("username").value.trim(); if (!user) return;
+  try { localStorage.setItem("ra_user", user); } catch (_) {}
+  $("fetchBtn").disabled = true;
+  try {
+    const games = await fetchGames(user);
+    $("status").textContent = games.length ? "Escolha uma partida para revisar." : "Nenhuma partida encontrada.";
+    renderGames(games, user);
+  } catch (err) {
+    $("status").className = "status err";
+    $("status").textContent = err instanceof TypeError ? "Não consegui falar com o chess.com. Verifique sua conexão." : err.message;
+  } finally { $("fetchBtn").disabled = false; }
+});
+$("pgnToggle").addEventListener("click", () => { $("pgnBox").hidden = !$("pgnBox").hidden; });
+$("pgnBtn").addEventListener("click", () => { const p = $("pgnInput").value.trim(); if (p) startReview(p, $("username").value.trim()); });
+$("backBtn").addEventListener("click", () => {
+  S.token++; if (engine && engine.w) engine.send("stop");
+  $("reviewSec").hidden = true; $("backBtn").hidden = true; $("searchCard").hidden = false;
+  if ($("games").children.length) $("gamesSec").hidden = false;
+});
+$("bStart").onclick = () => go(0); $("bPrev").onclick = () => go(S.idx - 1);
+$("bNext").onclick = () => go(S.idx + 1); $("bEnd").onclick = () => go(S.plies.length);
+$("bFlip").onclick = () => { S.flipped = !S.flipped; renderAll(); };
+$("graph").addEventListener("click", (e) => {
+  const r = e.currentTarget.getBoundingClientRect();
+  go(Math.round(((e.clientX - r.left) / r.width) * (S.evals.length - 1)));
+});
+document.addEventListener("keydown", (e) => {
+  if ($("reviewSec").hidden || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+  if (e.key === "ArrowLeft") { go(S.idx - 1); e.preventDefault(); }
+  if (e.key === "ArrowRight") { go(S.idx + 1); e.preventDefault(); }
+  if (e.key === "Home") go(0); if (e.key === "End") go(S.plies.length);
+});
+try { const u = localStorage.getItem("ra_user"); if (u) $("username").value = u; } catch (_) {}
+</script>
+</body>
+</html>
