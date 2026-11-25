@@ -167,6 +167,37 @@ label.tog{display:flex;gap:8px;align-items:center;margin:6px 0;cursor:pointer}
 @keyframes boom{0%{transform:translate(-50%,-50%) scale(.1);opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:0}}
 @keyframes shake{0%,100%{transform:translate(0,0)}20%{transform:translate(-7px,3px)}40%{transform:translate(6px,-4px)}60%{transform:translate(-5px,-2px)}80%{transform:translate(4px,4px)}}
 @media (prefers-reduced-motion: reduce){.pu,.meteor,.sq.tgt::after,.sq.wtgt::after,.pc.is-shield::before{animation:none}}
+.xh{position:absolute;inset:16%;border-radius:50%;border:3px solid #ff1744;z-index:4;pointer-events:none;animation:pulse .9s infinite;box-shadow:0 0 10px rgba(255,23,68,.7);background:rgba(255,23,68,.12)}
+.xh::before,.xh::after{content:'';position:absolute;background:#ff1744}
+.xh::before{left:50%;top:-22%;bottom:-22%;width:3px;transform:translateX(-50%)}
+.xh::after{top:50%;left:-22%;right:-22%;height:3px;transform:translateY(-50%)}
+.wready{position:absolute;right:2%;bottom:2%;width:28%;height:28%;z-index:3;line-height:0}
+.wready svg{width:100%;height:100%;filter:drop-shadow(0 1px 1px rgba(0,0,0,.5))}
+.cdnum{position:absolute;right:3%;bottom:3%;width:28%;height:28%;border-radius:50%;background:#455a64;color:#fff;border:2px solid #fff;z-index:3;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:calc(var(--bs)/8*.19);line-height:1}
+.cdnum.lg{position:static;display:inline-flex;width:16px;height:16px;border-width:1.5px}
+.cdnum.lg::after{content:'2';font-size:10px}
+.legend{width:100%;max-width:560px;display:flex;gap:16px;flex-wrap:wrap;justify-content:center;font-size:.88rem;color:var(--muted)}
+.legend>span{display:inline-flex;align-items:center;gap:6px}
+.lg-dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:rgba(20,10,40,.45);vertical-align:-1px;flex:none}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .lg-dot{background:rgba(255,255,255,.5)}}
+:root[data-theme="dark"] .lg-dot{background:rgba(255,255,255,.5)}
+.lg-xh{display:inline-block;width:15px;height:15px;border-radius:50%;border:2.5px solid #ff1744;position:relative;vertical-align:-2px;flex:none}
+.lg-xh::before{content:'';position:absolute;left:50%;top:-4px;bottom:-4px;width:2px;background:#ff1744;transform:translateX(-50%)}
+.lg-xh::after{content:'';position:absolute;top:50%;left:-4px;right:-4px;height:2px;background:#ff1744;transform:translateY(-50%)}
+.howto{display:grid;gap:8px;margin:10px 0;padding:12px;border-radius:14px;background:var(--panel2)}
+.howto>div{display:flex;gap:10px;align-items:center}
+.diag{display:grid;grid-template-columns:repeat(7,16px);grid-template-rows:repeat(7,16px);width:112px;height:112px;border-radius:6px;overflow:hidden;flex:none;box-shadow:0 0 0 2px var(--frame)}
+.diag div{position:relative;display:flex;align-items:center;justify-content:center}
+.diag .l{background:#f0d9b5}.diag .d{background:#b58863}
+.diag .mv::after{content:'';position:absolute;inset:34%;border-radius:50%;background:rgba(20,10,40,.45)}
+.diag .at::after{content:'';position:absolute;inset:14%;border-radius:50%;border:2px solid #ff1744;background:rgba(255,23,68,.3)}
+.diag .pc{width:16px;height:16px}.diag .pc>svg.sp{width:100%;height:100%;filter:none}
+.wcard{align-items:center}
+.wtable{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.slot{flex-direction:column;gap:2px;aspect-ratio:auto;min-height:64px}
+.slot svg{width:30px;height:30px}
+.slot small{font-size:.7rem;color:var(--muted)}
+.inv{grid-template-columns:repeat(3,1fr)}
 </style>
 </head>
 <body>
@@ -189,6 +220,7 @@ label.tog{display:flex;gap:8px;align-items:center;margin:6px 0;cursor:pointer}
       <div id="board"></div>
       <div id="fx"></div>
     </div>
+    <div class="legend" id="legend"></div>
     <div class="under"><div id="log"></div></div>
   </section>
   <section class="panel" id="panel-w"></section>
@@ -308,48 +340,41 @@ function sprite(type,col,setId){
 }
 
 /* =====================================================================
-   DADOS DE JOGO
+   DADOS DE JOGO — versão simplificada
+   Regra única das armas: a peça atira SEM sair do lugar.
+   Pontos cinza = mover. Mira vermelha = atirar.
    ===================================================================== */
-const SUDDEN=120;
-const START_CD=4; // armas ficam prontas no 3º turno de cada lado
+ICON.target='<circle cx="12" cy="12" r="8" fill="#fff" stroke="#ff1744" stroke-width="2.6"/><path d="M12 1.5v6M12 16.5v6M1.5 12h6M16.5 12h6" stroke="#ff1744" stroke-width="2.6" stroke-linecap="round"/><circle cx="12" cy="12" r="2.2" fill="#ff1744"/>';
+const CD=3;          // turnos para recarregar qualquer arma
+const START_CD=4;    // armas ficam prontas no 3º turno de cada lado
+const MAX_ITEMS=3;
+const MAX_ROUNDS=60; // depois disso vence quem tiver mais pontos em peças
 const VAL={p:1,n:3,b:3,r:5,q:9,k:0};
 const NAMES={p:'Peão',n:'Cavalo',b:'Bispo',r:'Torre',q:'Dama',k:'Rei'};
 const COLOR_NAME={w:'Brancas',b:'Pretas'};
-// Cada peça carrega a sua arma. cd = turnos de recarga.
+// Cada arma atinge casas que a peça NÃO consegue alcançar andando.
 const WEAPONS={
-  p:{name:'Lança',icon:'spear',cd:3,desc:'Estoca o 1º inimigo à frente, a até 2 casas.'},
-  n:{name:'Coice',icon:'horseshoe',cd:3,desc:'Empurra um inimigo vizinho 1 casa. Se bater em algo ou cair do tabuleiro, é esmagado.'},
-  b:{name:'Arco',icon:'bow',cd:3,desc:'Flecha na diagonal: acerta o 1º inimigo a até 4 casas.'},
-  r:{name:'Canhão',icon:'cannon',cd:4,desc:'Tiro em linha reta (sem limite) que atravessa até 2 inimigos.'},
-  q:{name:'Bomba',icon:'bomb',cd:5,desc:'Arremessa a até 3 casas: explosão 3×3. Cuidado com fogo amigo!'},
-  k:{name:'Martelo do Trovão',icon:'hammer',cd:4,desc:'Atordoa (congela) todos os inimigos vizinhos por 1 turno.'},
+  p:{name:'Lança',icon:'spear',desc:'Acerta o inimigo logo à frente.'},
+  n:{name:'Coice',icon:'horseshoe',desc:'Acerta um inimigo colado nele (qualquer lado).'},
+  b:{name:'Arco',icon:'bow',desc:'Atira reto (cima, baixo, lados) no 1º inimigo até 3 casas.'},
+  r:{name:'Canhão',icon:'cannon',desc:'Atira na diagonal no 1º inimigo até 3 casas.'},
+  q:{name:'Bomba',icon:'bomb',desc:'Arremessa em L (como o cavalo) e explode 3×3. Pega suas peças também!'},
+  k:{name:'Martelo',icon:'hammer',desc:'Acerta um inimigo a exatamente 2 casas em linha (pula por cima).'},
 };
 const ITEMS={
-  shield:{name:'Escudo',price:4,free:true,desc:'Protege uma peça sua por 2 turnos do inimigo. Bloqueia capturas e armas.'},
-  freeze:{name:'Congelar',price:4,free:true,desc:'Congela uma peça inimiga (exceto o Rei) por 2 turnos: não anda nem ataca.'},
-  double:{name:'Turno Duplo',price:6,free:true,desc:'Você faz duas ações seguidas neste turno.'},
-  reload:{name:'Recarga',price:5,free:true,desc:'Recarrega na hora as armas de todas as suas peças.'},
-  teleport:{name:'Teleporte',price:5,desc:'Leva uma peça sua para qualquer casa vazia.'},
-  swap:{name:'Troca',price:3,desc:'Troca de lugar duas peças suas.'},
-  crown:{name:'Coroa',price:6,desc:'Promove um peão seu a Dama na hora.'},
-  revive:{name:'Reviver',price:7,desc:'Traz de volta sua melhor peça perdida, numa casa vazia das suas 2 primeiras fileiras.'},
-  coins:{name:'Saco de moedas',desc:'+5 moedas'},
+  shield:{name:'Escudo',desc:'Protege uma peça sua por 2 turnos.',target:'own'},
+  freeze:{name:'Gelo',desc:'Congela uma peça inimiga por 2 turnos (não anda nem atira).',target:'enemy'},
+  double:{name:'Turno Duplo',desc:'Você joga duas vezes seguidas.',target:null},
+  reload:{name:'Recarga',desc:'Todas as suas armas ficam prontas na hora.',target:null},
+  teleport:{name:'Teleporte',desc:'Leva uma peça sua para qualquer casa vazia. Conta como a sua jogada.',target:'own2',ends:true},
 };
-const SPAWN_POOL=[['coins',3],['shield',3],['freeze',2],['reload',2],['teleport',2],['double',1],['swap',1],['crown',1],['revive',1]];
-const PROMPTS={
-  shield:['Escolha uma peça sua para proteger'],
-  freeze:['Escolha uma peça inimiga para congelar'],
-  teleport:['Escolha a peça para teletransportar','Escolha a casa de destino'],
-  swap:['Escolha a primeira peça','Escolha a peça para trocar de lugar'],
-  crown:['Escolha um peão para coroar'],
-  revive:['Escolha onde a peça vai renascer'],
-};
+const SPAWN_POOL=[['shield',3],['freeze',3],['reload',2],['teleport',2],['double',1]];
 
-/* ---------- Perfil ---------- */
+/* ---------- Perfil (skins e gemas) ---------- */
 const DEF_PROFILE={gems:40,sets:['classic'],boards:['wood'],set:'classic',board:'wood',muted:false};
 let profile=loadProfile();
 function loadProfile(){
-  try{const p=JSON.parse(localStorage.getItem('xadrez-caotico')||'null');if(p&&typeof p==='object'){const o=Object.assign({},DEF_PROFILE,p);if(!SETS[o.set])o.set='classic';o.sets=o.sets.filter(s=>SETS[s]);if(!o.sets.includes('classic'))o.sets.push('classic');return o;}}catch(e){}
+  try{const p=JSON.parse(localStorage.getItem('xadrez-caotico')||'null');if(p&&typeof p==='object'){const o=Object.assign({},DEF_PROFILE,p);if(!SETS[o.set])o.set='classic';o.sets=o.sets.filter(s=>SETS[s]);if(!o.sets.includes('classic'))o.sets.push('classic');if(!BOARDS[o.board])o.board='wood';return o;}}catch(e){}
   return Object.assign({},DEF_PROFILE);
 }
 function saveProfile(){try{localStorage.setItem('xadrez-caotico',JSON.stringify(profile));}catch(e){}}
@@ -375,13 +400,11 @@ const SFX={
   capture:()=>{tone(220,.14,'square',.08,90);noise(.12,.15)},
   boom:()=>{noise(.6,.5);tone(90,.5,'sine',.25,30)},
   power:()=>{tone(660,.1,'sine',.12);tone(990,.16,'sine',.12,0,.08);tone(1320,.2,'sine',.1,0,.16)},
-  coin:()=>{tone(988,.08,'square',.06);tone(1319,.18,'square',.06,0,.07)},
   freeze:()=>tone(1400,.35,'sine',.1,500),
   zap:()=>tone(1600,.28,'sawtooth',.07,180),
   whoosh:()=>noise(.25,.25,2500),
   stab:()=>{noise(.08,.3,3000);tone(700,.1,'square',.06,300)},
   thud:()=>{tone(120,.2,'sine',.3,50);noise(.15,.3,400)},
-  thunder:()=>{noise(.7,.45,600);tone(70,.6,'sawtooth',.12,40)},
   shield:()=>tone(500,.3,'triangle',.1,900),
   bad:()=>tone(160,.2,'sawtooth',.08,100),
   check:()=>{tone(880,.1,'square',.07);tone(880,.1,'square',.07,0,.15)},
@@ -396,12 +419,12 @@ const key=(r,c)=>r+','+c;
 const sqName=(r,c)=>'abcdefgh'[c]+(8-r);
 const rnd=a=>a[Math.floor(Math.random()*a.length)];
 const D4=[[1,0],[-1,0],[0,1],[0,-1]],DX=[[1,1],[1,-1],[-1,1],[-1,-1]],D8=D4.concat(DX);
+const DL=[[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]];
 let uid=0;
-function mk(type,color){return{type,color,id:++uid,moved:false,shield:0,frozen:0,cd:0,kills:0,vet:false};}
+function mk(type,color){return{type,color,id:++uid,moved:false,shield:0,frozen:0,cd:START_CD};}
 function initBoard(){
   const B=[...Array(8)].map(()=>Array(8).fill(null)),back=['r','n','b','q','k','b','n','r'];
   for(let c=0;c<8;c++){B[0][c]=mk(back[c],'b');B[1][c]=mk('p','b');B[6][c]=mk('p','w');B[7][c]=mk(back[c],'w');}
-  for(const row of B)for(const P of row)if(P)P.cd=START_CD;
   return B;
 }
 
@@ -411,22 +434,21 @@ const shielded=P=>P.shield>S.ply;
 const frozen=P=>P.frozen>S.ply;
 const weaponReady=P=>!frozen(P)&&S.ply>=P.cd;
 const cdLeft=P=>Math.max(0,Math.ceil((P.cd-S.ply)/2));
-const hittable=(T,col)=>T&&T.color!==col&&(T.type!=='k'||S.ply>=SUDDEN);
 const isBot=col=>S.mode==='demo'||(S.mode==='bot'&&col==='b');
 const isHumanTurn=()=>!isBot(S.turn);
 
 function newGame(mode,meteors){
   gameId++;
-  S={board:initBoard(),turn:'w',mode,opts:{meteors},sel:null,moves:[],pending:null,
-     inv:{w:[],b:[]},coins:{w:3,b:3},lost:{w:[],b:[]},ply:0,powerups:{},meteors:[],
-     ep:null,last:null,extra:false,usedItem:false,over:false,winner:null,anim:null,logs:[],gid:gameId};
+  S={board:initBoard(),turn:'w',mode,opts:{meteors},sel:null,moves:[],wt:[],pending:null,
+     inv:{w:[],b:[]},lost:{w:[],b:[]},ply:0,powerups:{},meteors:[],
+     ep:null,last:null,extra:false,over:false,winner:null,anim:null,logs:[],gid:gameId};
   spawnPowerup();spawnPowerup();
-  addLog(`${ic('sparkle')} Nova partida! Toda peça tem uma arma: selecione uma peça e clique em <b>Atacar</b>.`);
+  addLog('Nova partida! Selecione uma peça: <b>pontos</b> = mover, <b>mira vermelha</b> = atirar.');
   render();maybeBot();
 }
 
 /* =====================================================================
-   MOVIMENTOS
+   MOVIMENTOS (xadrez normal)
    ===================================================================== */
 function pseudoMoves(B,r,c,ep){
   const P=B[r][c];if(!P||frozen(P))return[];
@@ -439,7 +461,7 @@ function pseudoMoves(B,r,c,ep){
     case'r':slide(D4);break;
     case'b':slide(DX);break;
     case'q':slide(D8);break;
-    case'n':for(const[dr,dc]of[[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]])tryAdd(r+dr,c+dc);break;
+    case'n':for(const[dr,dc]of DL)tryAdd(r+dr,c+dc);break;
     case'k':{
       for(const[dr,dc]of D8)tryAdd(r+dr,c+dc);
       const home=col==='w'?7:0;
@@ -464,239 +486,181 @@ function findKing(B,col){for(let r=0;r<8;r++)for(let c=0;c<8;c++){const P=B[r][c
 function kingAttacked(B,col){const k=findKing(B,col);if(!k)return false;return allMoves(B,opp(col),null).some(m=>m.tr===k[0]&&m.tc===k[1]);}
 
 /* =====================================================================
+   ARMAS — padrão de mira (em tabuleiro vazio) e alvos reais
+   ===================================================================== */
+// Casas que a arma cobre, ignorando peças (usado nos diagramas).
+function weaponPattern(type,col,r,c){
+  const out=[];const add=(tr,tc)=>{if(inB(tr,tc))out.push([tr,tc]);};
+  switch(type){
+    case'p':add(r+(col==='w'?-1:1),c);break;
+    case'n':for(const[dr,dc]of D8)add(r+dr,c+dc);break;
+    case'b':for(const[dr,dc]of D4)for(let s=1;s<=3;s++)add(r+dr*s,c+dc*s);break;
+    case'r':for(const[dr,dc]of DX)for(let s=1;s<=3;s++)add(r+dr*s,c+dc*s);break;
+    case'q':for(const[dr,dc]of DL)add(r+dr,c+dc);break;
+    case'k':for(const[dr,dc]of D8)add(r+dr*2,c+dc*2);break;
+  }
+  return out;
+}
+const enemyHere=(B,r,c,col)=>{const T=B[r][c];return T&&T.color!==col&&T.type!=='k';};
+function weaponTargets(r,c){
+  const B=S.board,P=B[r][c];if(!P||!weaponReady(P))return[];
+  const col=P.color,out=[];
+  const ray=dirs=>{for(const[dr,dc]of dirs)for(let s=1;s<=3;s++){const tr=r+dr*s,tc=c+dc*s;if(!inB(tr,tc))break;if(B[tr][tc]){if(enemyHere(B,tr,tc,col))out.push([tr,tc]);break;}}};
+  switch(P.type){
+    case'b':ray(D4);break;
+    case'r':ray(DX);break;
+    case'q':for(const[tr,tc]of weaponPattern('q',col,r,c)){let hits=false;for(const[dr,dc]of D8.concat([[0,0]]))if(inB(tr+dr,tc+dc)&&enemyHere(B,tr+dr,tc+dc,col))hits=true;if(hits)out.push([tr,tc]);}break;
+    default:for(const[tr,tc]of weaponPattern(P.type,col,r,c))if(enemyHere(B,tr,tc,col))out.push([tr,tc]);
+  }
+  return out;
+}
+function destroy(r,c,silent){
+  const P=S.board[r][c];if(!P||P.type==='k')return false;
+  if(shielded(P)){P.shield=0;fxText(r,c,'Escudo quebrou!','#80d8ff');SFX.shield();return false;}
+  S.board[r][c]=null;S.lost[P.color].push(P.type);
+  fxBurst(r,c,'#ff7043',9);fxBurst(r,c,'#ffeb3b',5);
+  return true;
+}
+function useWeapon(r,c,tr,tc){
+  const B=S.board,P=B[r][c],col=P.color,W=WEAPONS[P.type],who=COLOR_NAME[col];
+  P.cd=S.ply+CD*2;S.pending=null;S.sel=null;S.moves=[];S.wt=[];
+  S.last={fr:r,fc:c,tr,tc};
+  fxIcon(r,c,W.icon);
+  let n=0;
+  if(P.type==='q'){
+    fxProjectile(r,c,tr,tc,'bomb');SFX.whoosh();const g=S.gid;
+    setTimeout(()=>{if(S.gid===g){fxBoom(tr,tc);SFX.boom();shake();}},260);
+    for(const[dr,dc]of D8.concat([[0,0]])){const xr=tr+dr,xc=tc+dc;if(!inB(xr,xc))continue;delete S.powerups[key(xr,xc)];if(destroy(xr,xc))n++;}
+  }else{
+    if(P.type==='b'||P.type==='r'){fxBeam(r,c,tr,tc,P.type==='b'?'linear-gradient(90deg,#8d6e63,#fff59d)':'linear-gradient(90deg,#ff1744,#ffea00)');}
+    if(P.type==='b')fxProjectile(r,c,tr,tc,'bow');
+    ({p:SFX.stab,n:SFX.thud,b:SFX.whoosh,r:SFX.boom,k:SFX.thud})[P.type]();
+    if(P.type==='r'||P.type==='k')shake();
+    fxIcon(tr,tc,'boom');
+    if(destroy(tr,tc))n++;
+  }
+  addLog(`${ic(W.icon)} ${who}: ${W.name} do ${NAMES[P.type]} — ${n?`${n} peça(s) destruída(s)!`:'sem baixas.'}`);
+  endAction();
+}
+
+/* =====================================================================
    AÇÕES
    ===================================================================== */
-function onKill(P,r,c){
-  P.kills++;
-  if(P.kills===2&&!P.vet){P.vet=true;P.shield=S.ply+4;P.cd=0;setTimeout(()=>fxText(r,c,'Veterano!','#fff176'),350);addLog(`${ic('star')} ${NAMES[P.type]} virou Veterano: escudo grátis e arma recarregada!`);}
-}
 function doMove(m){
   const B=S.board,P=B[m.fr][m.fc],col=P.color;
   let T=B[m.tr][m.tc],tr=m.tr,tc=m.tc;
   if(m.ep){T=B[m.fr][m.tc];B[m.fr][m.tc]=null;tr=m.fr;tc=m.tc;}
   B[m.tr][m.tc]=P;B[m.fr][m.fc]=null;P.moved=true;
   let txt=`${COLOR_NAME[col]}: ${NAMES[P.type]} ${sqName(m.fr,m.fc)}→${sqName(m.tr,m.tc)}`;
-  if(T){
-    S.lost[T.color].push(T.type);S.coins[col]+=VAL[T.type];
-    txt=`${ic('swords')} ${txt} captura ${NAMES[T.type]}!`;
-    fxBurst(tr,tc,T.type==='k'?'#ffd600':'#fff59d',12);
-    if(VAL[T.type])fxText(m.tr,m.tc,`+${VAL[T.type]} moedas`,'#ffd54f');
-    SFX.capture();onKill(P,m.tr,m.tc);
-  }else SFX.move();
+  if(T){S.lost[T.color].push(T.type);txt=`${ic('swords')} ${txt} captura ${NAMES[T.type]}!`;fxBurst(tr,tc,T.type==='k'?'#ffd600':'#fff59d',12);SFX.capture();}
+  else SFX.move();
   if(m.castle){const row=m.tr;if(m.castle==='k'){B[row][5]=B[row][7];B[row][7]=null;B[row][5].moved=true;}else{B[row][3]=B[row][0];B[row][0]=null;B[row][3].moved=true;}txt+=' (roque)';}
   S.ep=(P.type==='p'&&Math.abs(m.tr-m.fr)===2)?{r:(m.tr+m.fr)/2,c:m.fc}:null;
   S.last={fr:m.fr,fc:m.fc,tr:m.tr,tc:m.tc};S.anim=key(m.tr,m.tc);
   addLog(txt);
   if(T&&T.type==='k'){gameOver(col,'O Rei foi capturado!');return;}
-  promoteCheck(m.tr,m.tc);
-  landOn(m.tr,m.tc);
+  if(P.type==='p'&&(m.tr===0||m.tr===7)){P.type='q';SFX.power();setTimeout(()=>fxText(m.tr,m.tc,'Virou Dama!','#ffd54f'),200);addLog(`${ic('crown')} Peão virou Dama!`);}
+  pickUp(m.tr,m.tc);
   endAction();
 }
-function promoteCheck(r,c){
-  const P=S.board[r][c];if(P&&P.type==='p'&&(r===0||r===7)){P.type='q';P.cd=0;setTimeout(()=>fxText(r,c,'Promovido!','#ffd54f'),200);SFX.power();addLog(`${ic('crown')} Peão promovido a Dama em ${sqName(r,c)}!`);}
-}
-function landOn(r,c){
-  const P=S.board[r][c];if(!P)return;const k=key(r,c);
-  if(S.powerups[k]){const id=S.powerups[k];delete S.powerups[k];giveItem(P.color,id,r,c);}
-}
-function giveItem(col,id,r,c){
-  fxIcon(r,c,id==='coins'?'coins':id);
-  if(id==='coins'){S.coins[col]+=5;fxText(r,c,'+5 moedas','#ffd54f');SFX.coin();addLog(`${ic('coins')} ${COLOR_NAME[col]} pegaram um saco de moedas!`);return;}
-  if(S.inv[col].length>=5){S.coins[col]+=3;fxText(r,c,'Mochila cheia: +3','#ffd54f');SFX.coin();return;}
-  S.inv[col].push(id);fxText(r,c,ITEMS[id].name+'!','#d1c4ff');SFX.power();
-  addLog(`${ic(id)} ${COLOR_NAME[col]} pegaram: ${ITEMS[id].name}`);
-}
-function destroy(r,c,byCol,killer){
-  const P=S.board[r][c];if(!P)return false;
-  if(shielded(P)){P.shield=0;fxText(r,c,'Bloqueado!','#80d8ff');SFX.shield();return false;}
-  if(P.type==='k'){
-    if(S.ply<SUDDEN){fxText(r,c,'Rei imune!','#fff');return false;}
-    S.board[r][c]=null;S.lost[P.color].push('k');fxBurst(r,c,'#ffd600',14);gameOver(opp(P.color),'Morte súbita: o Rei foi destruído!');return true;
-  }
-  S.board[r][c]=null;S.lost[P.color].push(P.type);
-  if(byCol&&P.color!==byCol){S.coins[byCol]+=VAL[P.type];if(killer)onKill(killer,r,c);}
-  fxBurst(r,c,'#ff7043',9);fxBurst(r,c,'#ffeb3b',5);
-  return true;
+function pickUp(r,c){
+  const P=S.board[r][c],k=key(r,c);if(!P||!S.powerups[k])return;
+  const id=S.powerups[k];delete S.powerups[k];fxIcon(r,c,id);
+  if(S.inv[P.color].length>=MAX_ITEMS){fxText(r,c,'Itens cheios!','#fff');return;}
+  S.inv[P.color].push(id);fxText(r,c,ITEMS[id].name+'!','#d1c4ff');SFX.power();
+  addLog(`${ic(id)} ${COLOR_NAME[P.color]} pegaram: ${ITEMS[id].name}`);
 }
 function endAction(){
   if(S.over)return;
-  if(S.extra){S.extra=false;S.usedItem=false;S.sel=null;S.moves=[];addLog(`${ic('double')} Ação extra!`);render();maybeBot();return;}
+  if(S.extra){S.extra=false;S.sel=null;S.moves=[];S.wt=[];addLog(`${ic('double')} Jogue de novo!`);render();maybeBot();return;}
   endTurn();
 }
 function endTurn(){
-  S.ply++;S.turn=opp(S.turn);S.sel=null;S.moves=[];S.pending=null;S.usedItem=false;S.extra=false;
-  S.coins[S.turn]+=1;
+  S.ply++;S.turn=opp(S.turn);S.sel=null;S.moves=[];S.wt=[];S.pending=null;S.extra=false;
   const hit=S.meteors.filter(m=>m.at<=S.ply);S.meteors=S.meteors.filter(m=>m.at>S.ply);
-  if(hit.length){SFX.boom();shake();let n=0;for(const m of hit){fxBoom(m.r,m.c);delete S.powerups[key(m.r,m.c)];if(destroy(m.r,m.c,null))n++;if(S.over)return;}addLog(`${ic('meteor')} Chuva de meteoros! ${n} peça(s) destruída(s).`);}
-  if(S.ply%3===0)spawnPowerup();
-  if(S.ply===SUDDEN){addLog(`${ic('skull')} MORTE SÚBITA! Agora os Reis também podem ser atingidos por armas e meteoros.`);SFX.bad();}
-  if(S.ply>=8&&((S.opts.meteors&&S.ply%10===0)||(S.ply>=SUDDEN&&S.ply%5===0)))scheduleMeteors();
+  if(hit.length){SFX.boom();shake();let n=0;for(const m of hit){fxBoom(m.r,m.c);delete S.powerups[key(m.r,m.c)];if(destroy(m.r,m.c))n++;}addLog(`${ic('meteor')} Meteoros caíram! ${n} peça(s) destruída(s).`);}
+  if(S.ply%4===0)spawnPowerup();
+  if(S.opts.meteors&&S.ply>=10&&S.ply%10===0)scheduleMeteors();
+  if(checkEnd())return;
   if(kingAttacked(S.board,S.turn)){SFX.check();addLog(`${ic('warn')} Xeque nas ${COLOR_NAME[S.turn]}!`);}
   render();maybeBot();
 }
+const material=col=>{let v=0;for(const row of S.board)for(const P of row)if(P&&P.color===col)v+=VAL[P.type];return v;};
+function checkEnd(){
+  for(const col of['w','b']){let n=0;for(const row of S.board)for(const P of row)if(P&&P.color===col&&P.type!=='k')n++;
+    if(n===0){gameOver(opp(col),`As ${COLOR_NAME[col]} ficaram só com o Rei.`);return true;}}
+  if(S.ply>=MAX_ROUNDS*2){const w=material('w'),b=material('b');
+    gameOver(w===b?null:(w>b?'w':'b'),`Fim das ${MAX_ROUNDS} rodadas — pontos: Brancas ${w} × ${b} Pretas.`);return true;}
+  return false;
+}
 function spawnPowerup(){
-  if(Object.keys(S.powerups).length>=4)return;
+  if(Object.keys(S.powerups).length>=3)return;
   const empty=[];for(let r=2;r<=5;r++)for(let c=0;c<8;c++){const k=key(r,c);if(!S.board[r][c]&&!S.powerups[k])empty.push(k);}
   if(!empty.length)return;
-  const tot=SPAWN_POOL.reduce((a,b)=>a+b[1],0);let x=Math.random()*tot,id='coins';
+  const tot=SPAWN_POOL.reduce((a,b)=>a+b[1],0);let x=Math.random()*tot,id='shield';
   for(const[i,w]of SPAWN_POOL){if((x-=w)<0){id=i;break;}}
   S.powerups[rnd(empty)]=id;
 }
 function scheduleMeteors(){
-  const all=[];for(let r=0;r<8;r++)for(let c=0;c<8;c++){const P=S.board[r][c];if(!P||P.type!=='k'||S.ply>=SUDDEN-2)all.push([r,c]);}
+  const all=[];for(let r=0;r<8;r++)for(let c=0;c<8;c++){const P=S.board[r][c];if(!P||P.type!=='k')all.push([r,c]);}
   for(let i=0;i<3&&all.length;i++){const j=Math.floor(Math.random()*all.length);const[r,c]=all.splice(j,1)[0];S.meteors.push({r,c,at:S.ply+2});}
-  addLog(`${ic('meteor')} Meteoros a caminho! Saiam das casas marcadas!`);SFX.bad();
+  addLog(`${ic('meteor')} Meteoros chegando! Tire suas peças das casas com alvo vermelho.`);SFX.bad();
 }
 function gameOver(win,why){
   if(S.over)return;
-  S.over=true;S.winner=win;S.pending=null;S.sel=null;S.moves=[];
-  SFX.win();setTimeout(()=>addLog(`${ic('trophy')} ${COLOR_NAME[win]} vencem! ${why}`),0);
+  S.over=true;S.winner=win;S.pending=null;S.sel=null;S.moves=[];S.wt=[];
+  SFX.win();setTimeout(()=>addLog(`${ic('trophy')} ${win?COLOR_NAME[win]+' vencem!':'Empate!'} ${why}`),0);
   let gems=0;const mat=c=>S.lost[opp(c)].reduce((a,t)=>a+VAL[t],0);
-  if(S.mode==='bot')gems=(win==='w'?25:5)+mat('w');
+  if(S.mode==='bot')gems=(win==='w'?25:win?5:10)+mat('w');
   else if(S.mode==='2p')gems=15+Math.floor((mat('w')+mat('b'))/2);
   if(gems){profile.gems+=gems;saveProfile();}
   render();
-  const g=S.gid;
-  setTimeout(()=>{if(S.gid!==g)return;showGameOver(win,why,gems);},900);
+  const g=S.gid;setTimeout(()=>{if(S.gid===g)showGameOver(win,why,gems);},900);
 }
 
 /* =====================================================================
-   ARMAS DAS PEÇAS
+   ITENS
    ===================================================================== */
-function cannonHits(r,c,dr,dc,col){
-  const hits=[];let tr=r+dr,tc=c+dc;
-  while(inB(tr,tc)&&hits.length<2){const T=S.board[tr][tc];if(T){if(!hittable(T,col))break;hits.push([tr,tc]);}tr+=dr;tc+=dc;}
-  return hits;
-}
-function cannonDirs(r,c,col){const out=[];for(const[dr,dc]of D4){const h=cannonHits(r,c,dr,dc,col);if(h.length)out.push({dr,dc,hits:h,first:h[0]});}return out;}
-function hammerVictims(r,c,col){const out=[];for(const[dr,dc]of D8){const tr=r+dr,tc=c+dc;if(!inB(tr,tc))continue;const T=S.board[tr][tc];if(T&&T.color!==col&&T.type!=='k')out.push([tr,tc]);}return out;}
-function weaponTargets(r,c){
-  const B=S.board,P=B[r][c];if(!P||!weaponReady(P))return[];
-  const col=P.color,out=[];
-  const ray=(dirs,range)=>{for(const[dr,dc]of dirs){for(let s=1;s<=range;s++){const tr=r+dr*s,tc=c+dc*s;if(!inB(tr,tc))break;const T=B[tr][tc];if(T){if(hittable(T,col))out.push([tr,tc]);break;}}}};
-  switch(P.type){
-    case'p':ray([[col==='w'?-1:1,0]],2);break;
-    case'b':ray(DX,4);break;
-    case'n':for(const[dr,dc]of D8){const tr=r+dr,tc=c+dc;if(inB(tr,tc)&&hittable(B[tr][tc],col))out.push([tr,tc]);}break;
-    case'r':out.push(...cannonDirs(r,c,col).map(d=>d.first));break;
-    case'q':for(let tr=r-3;tr<=r+3;tr++)for(let tc=c-3;tc<=c+3;tc++)if(inB(tr,tc)&&!(tr===r&&tc===c))out.push([tr,tc]);break;
-    case'k':if(hammerVictims(r,c,col).length)out.push([r,c]);break;
-  }
-  return out;
-}
-function startWeapon(){
-  if(!S||S.over||!isHumanTurn()||!S.sel)return;
-  const{r,c}=S.sel,P=S.board[r][c];if(!P||P.color!==S.turn)return;
-  if(frozen(P)){toast('Peça congelada não pode atacar!');SFX.bad();return;}
-  if(!weaponReady(P)){toast(`${WEAPONS[P.type].name} recarregando: ${cdLeft(P)} turno(s).`);SFX.bad();return;}
-  const t=weaponTargets(r,c);
-  if(!t.length){toast(`Nenhum alvo ao alcance do ${WEAPONS[P.type].name}.`);SFX.bad();return;}
-  if(P.type==='k'){S.sel=null;S.moves=[];useWeapon(r,c,r,c);return;}
-  S.pending={kind:'weapon',r,c};S.moves=[];render();
-}
-function useWeapon(r,c,tr,tc){
-  const B=S.board,P=B[r][c],col=P.color,W=WEAPONS[P.type],who=COLOR_NAME[col];
-  P.cd=S.ply+W.cd*2;S.pending=null;S.sel=null;S.moves=[];S.last=null;
-  fxIcon(r,c,W.icon);
-  switch(P.type){
-    case'p':{fxProjectile(r,c,tr,tc,'spear');SFX.stab();const T=B[tr][tc];const ok=destroy(tr,tc,col,P);
-      addLog(`${ic('spear')} ${who}: Lança do Peão em ${sqName(tr,tc)}${ok?` derruba ${NAMES[T.type]}!`:'.'}`);break;}
-    case'b':{fxBeam(r,c,tr,tc,'linear-gradient(90deg,#8d6e63,#fff59d)');fxProjectile(r,c,tr,tc,'bow');SFX.whoosh();const T=B[tr][tc];const ok=destroy(tr,tc,col,P);
-      if(ok)fxText(tr,tc,'Na mosca!','#fff');addLog(`${ic('bow')} ${who}: flecha do Bispo em ${sqName(tr,tc)}${ok?` derruba ${NAMES[T.type]}!`:'.'}`);break;}
-    case'r':{const d=cannonDirs(r,c,col).find(d=>d.first[0]===tr&&d.first[1]===tc);
-      let er=r,ec=c;while(inB(er+d.dr,ec+d.dc)){er+=d.dr;ec+=d.dc;}
-      fxBeam(r,c,er,ec,'linear-gradient(90deg,#ff1744,#ffea00)');SFX.boom();shake();
-      let n=0;for(const[hr,hc]of d.hits){if(destroy(hr,hc,col,P))n++;if(S.over)return;}
-      addLog(`${ic('cannon')} ${who}: Canhão da Torre atinge ${n} peça(s)!`);break;}
-    case'q':{fxProjectile(r,c,tr,tc,'bomb');const g=S.gid;
-      setTimeout(()=>{if(S.gid===g)fxBoom(tr,tc);},280);SFX.whoosh();setTimeout(()=>{SFX.boom();shake();},260);
-      let n=0;for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){const xr=tr+dr,xc=tc+dc;if(!inB(xr,xc))continue;delete S.powerups[key(xr,xc)];if(destroy(xr,xc,col,B[xr][xc]===P?null:P))n++;if(S.over)return;}
-      addLog(`${ic('bomb')} ${who}: Bomba da Dama em ${sqName(tr,tc)} — ${n} peça(s) destruída(s)!`);break;}
-    case'n':{const T=B[tr][tc],dr=tr-r,dc=tc-c,nr=tr+dr,nc=tc+dc;SFX.thud();fxIcon(tr,tc,'boom');
-      if(shielded(T)){destroy(tr,tc,col,P);addLog(`${ic('horseshoe')} ${who}: Coice do Cavalo bloqueado por escudo.`);break;}
-      if(inB(nr,nc)&&!B[nr][nc]){B[nr][nc]=T;B[tr][tc]=null;S.anim=key(nr,nc);fxText(nr,nc,'Empurrado!','#fff');
-        addLog(`${ic('horseshoe')} ${who}: Coice do Cavalo empurra ${NAMES[T.type]} para ${sqName(nr,nc)}.`);landOn(nr,nc);}
-      else{destroy(tr,tc,col,P);fxText(tr,tc,'Esmagado!','#ff8a80');shake();addLog(`${ic('horseshoe')} ${who}: Coice do Cavalo esmaga ${NAMES[T.type]}!`);}
-      break;}
-    case'k':{const v=hammerVictims(r,c,col);SFX.thunder();shake();fxWave(r,c);let n=0;
-      for(const[vr,vc]of v){const T=B[vr][vc];if(shielded(T)){T.shield=0;fxText(vr,vc,'Bloqueado!','#80d8ff');continue;}T.frozen=Math.max(T.frozen,S.ply+3);fxIcon(vr,vc,'freeze');n++;}
-      addLog(`${ic('hammer')} ${who}: Martelo do Trovão atordoa ${n} inimigo(s)!`);break;}
-  }
-  if(S.over)return;
-  endAction();
-}
-
-/* =====================================================================
-   ITENS (power-ups)
-   ===================================================================== */
-function bestLost(col){const l=S.lost[col].filter(t=>t!=='k');if(!l.length)return null;return l.sort((a,b)=>VAL[b]-VAL[a])[0];}
 function itemTargets(p,col){
   const B=S.board,out=[];
-  const each=f=>{for(let r=0;r<8;r++)for(let c=0;c<8;c++)f(r,c,B[r][c]);};
-  switch(p.id){
-    case'shield':each((r,c,P)=>{if(P&&P.color===col&&!shielded(P))out.push([r,c]);});break;
-    case'freeze':each((r,c,P)=>{if(P&&P.color!==col&&P.type!=='k'&&!shielded(P)&&!frozen(P))out.push([r,c]);});break;
-    case'crown':each((r,c,P)=>{if(P&&P.color===col&&P.type==='p')out.push([r,c]);});break;
-    case'revive':if(bestLost(col)){const home=col==='w'?[6,7]:[0,1];each((r,c,P)=>{if(home.includes(r)&&!P)out.push([r,c]);});}break;
-    case'teleport':
-      if(p.step===0)each((r,c,P)=>{if(P&&P.color===col)out.push([r,c]);});
-      else{const P=B[p.data.r][p.data.c];each((r,c,T)=>{if(!T&&!(P.type==='p'&&(r===0||r===7)))out.push([r,c]);});}
-      break;
-    case'swap':
-      if(p.step===0)each((r,c,P)=>{if(P&&P.color===col)out.push([r,c]);});
-      else each((r,c,P)=>{if(P&&P.color===col&&!(r===p.data.r&&c===p.data.c))out.push([r,c]);});
-      break;
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++){const P=B[r][c];
+    if(p.id==='shield'&&P&&P.color===col&&!shielded(P))out.push([r,c]);
+    if(p.id==='freeze'&&P&&P.color!==col&&P.type!=='k'&&!frozen(P))out.push([r,c]);
+    if(p.id==='teleport'){if(p.step===0&&P&&P.color===col&&!frozen(P))out.push([r,c]);
+      if(p.step===1&&!P){const M=B[p.data.r][p.data.c];if(!(M.type==='p'&&(r===0||r===7)))out.push([r,c]);}}
   }
   return out;
 }
 function startItem(idx){
   if(!S||S.over||!isHumanTurn())return;
-  if(S.usedItem){toast('Só 1 item por turno!');return;}
   const id=S.inv[S.turn][idx];if(!id)return;
-  S.sel=null;S.moves=[];
-  if(id==='double'||id==='reload'){applyItem(id,S.turn);return;}
-  const p={kind:'item',id,step:0,data:{}};
+  S.sel=null;S.moves=[];S.wt=[];
+  if(!ITEMS[id].target){applyItem(id,S.turn);return;}
+  const p={id,step:0,data:{}};
   if(!itemTargets(p,S.turn).length){toast(`Sem alvos para ${ITEMS[id].name} agora.`);SFX.bad();return;}
   S.pending=p;render();
 }
 function cancelPending(){if(S&&S.pending){S.pending=null;render();}}
 function handlePendingClick(r,c){
   const p=S.pending,col=S.turn;
-  if(p.kind==='weapon'){
-    if(weaponTargets(p.r,p.c).some(([a,b])=>a===r&&b===c)){useWeapon(p.r,p.c,r,c);return;}
-    cancelPending();return;
-  }
-  if(!itemTargets(p,col).some(([a,b])=>a===r&&b===c)){
-    if(p.step===1){p.step=0;p.data={};render();return;}
-    cancelPending();return;
-  }
-  if((p.id==='teleport'||p.id==='swap')&&p.step===0){p.step=1;p.data={r,c};render();return;}
+  if(!itemTargets(p,col).some(([a,b])=>a===r&&b===c)){cancelPending();return;}
+  if(p.id==='teleport'&&p.step===0){p.step=1;p.data={r,c};render();return;}
   applyItem(p.id,col,p.data,r,c);
 }
 function applyItem(id,col,data,r,c){
   const inv=S.inv[col],i=inv.indexOf(id);if(i<0)return;
-  inv.splice(i,1);S.usedItem=true;S.pending=null;
-  const B=S.board,it=ITEMS[id],who=COLOR_NAME[col];
+  inv.splice(i,1);S.pending=null;
+  const B=S.board,who=COLOR_NAME[col];
   switch(id){
-    case'double':S.extra=true;SFX.power();addLog(`${ic('double')} ${who} ativaram Turno Duplo!`);if(!isBot(col))toast('Turno duplo! Você terá 2 ações.');break;
-    case'reload':{let n=0;for(const row of B)for(const P of row)if(P&&P.color===col&&P.cd>S.ply){P.cd=0;n++;}SFX.power();addLog(`${ic('reload')} ${who} recarregaram ${n} arma(s)!`);if(!isBot(col))toast('Todas as suas armas estão prontas!');break;}
-    case'shield':B[r][c].shield=S.ply+4;fxIcon(r,c,'shield');SFX.shield();addLog(`${ic('shield')} ${who} protegeram ${NAMES[B[r][c].type]} em ${sqName(r,c)}`);break;
-    case'freeze':B[r][c].frozen=S.ply+5;fxBurst(r,c,'#b3e5fc',10);fxIcon(r,c,'freeze');SFX.freeze();addLog(`${ic('freeze')} ${who} congelaram ${NAMES[B[r][c].type]} em ${sqName(r,c)}`);break;
-    case'crown':B[r][c].type='q';B[r][c].cd=0;fxIcon(r,c,'crown');fxText(r,c,'Rainha!','#ffd54f');SFX.power();addLog(`${ic('crown')} ${who} coroaram um peão!`);break;
-    case'revive':{const t=bestLost(col);S.lost[col].splice(S.lost[col].indexOf(t),1);const P=mk(t,col);P.moved=true;B[r][c]=P;S.anim=key(r,c);fxIcon(r,c,'revive');fxText(r,c,`${NAMES[t]} reviveu!`,'#f48fb1');SFX.power();addLog(`${ic('revive')} ${who} reviveram: ${NAMES[t]}`);break;}
-    case'teleport':{const P=B[data.r][data.c];B[data.r][data.c]=null;B[r][c]=P;P.moved=true;S.ep=null;fxIcon(data.r,data.c,'teleport');fxIcon(r,c,'teleport');S.anim=key(r,c);SFX.zap();
-      addLog(`${ic('teleport')} ${who} teletransportaram ${NAMES[P.type]} para ${sqName(r,c)}`);landOn(r,c);break;}
-    case'swap':{const P=B[data.r][data.c],Q=B[r][c];B[data.r][data.c]=Q;B[r][c]=P;S.ep=null;fxIcon(data.r,data.c,'swap');fxIcon(r,c,'swap');SFX.zap();
-      addLog(`${ic('swap')} ${who} trocaram ${NAMES[P.type]} e ${NAMES[Q.type]} de lugar`);promoteCheck(r,c);promoteCheck(data.r,data.c);break;}
+    case'double':S.extra=true;SFX.power();addLog(`${ic('double')} ${who} usaram Turno Duplo!`);break;
+    case'reload':{for(const row of B)for(const P of row)if(P&&P.color===col)P.cd=0;SFX.power();addLog(`${ic('reload')} ${who} recarregaram todas as armas!`);break;}
+    case'shield':B[r][c].shield=S.ply+4;fxIcon(r,c,'shield');SFX.shield();addLog(`${ic('shield')} ${who} protegeram ${NAMES[B[r][c].type]}`);break;
+    case'freeze':B[r][c].frozen=S.ply+5;fxBurst(r,c,'#b3e5fc',10);fxIcon(r,c,'freeze');SFX.freeze();addLog(`${ic('freeze')} ${who} congelaram ${NAMES[B[r][c].type]}`);break;
+    case'teleport':{const P=B[data.r][data.c];B[data.r][data.c]=null;B[r][c]=P;P.moved=true;S.ep=null;fxIcon(data.r,data.c,'teleport');fxIcon(r,c,'teleport');S.anim=key(r,c);S.last={fr:data.r,fc:data.c,tr:r,tc:c};SFX.zap();
+      addLog(`${ic('teleport')} ${who} teletransportaram ${NAMES[P.type]} para ${sqName(r,c)}`);pickUp(r,c);break;}
   }
-  if(it.free){render();return;}
-  endAction();
-}
-function buyItem(id){
-  const col=S.turn;if(S.over||!isHumanTurn())return;
-  const it=ITEMS[id];if(S.coins[col]<it.price||S.inv[col].length>=5)return;
-  S.coins[col]-=it.price;S.inv[col].push(id);SFX.coin();addLog(`${ic('cart')} ${COLOR_NAME[col]} compraram ${it.name}`);
-  render();showShop();
+  if(ITEMS[id].ends){endAction();return;}
+  render();
 }
 
 /* =====================================================================
@@ -720,26 +684,20 @@ function worstThreat(B2,col){
 }
 function botAct(){
   const col=S.turn;
-  botShop(col);
-  if(!S.usedItem){const r=botItem(col);if(r==='turn')return;if(r==='free'){maybeBot();return;}}
+  const it=botItem(col);if(it==='turn')return;if(it==='free'){maybeBot();return;}
   const ms=allMoves(S.board,col,S.ep);
   let best=null,bs=-Infinity;for(const m of ms){const s=scoreMove(m,col);if(s>bs){bs=s;best=m;}}
   const w=botWeapon(col);
   if(w){const ws=w.v*10+2-worstThreat(S.board,col)*.9;if(!best||ws>bs){useWeapon(w.r,w.c,w.tr,w.tc);return;}}
-  if(!best){addLog(`${COLOR_NAME[col]} não têm ações e passam a vez.`);endTurn();return;}
+  if(!best){addLog(`${COLOR_NAME[col]} não têm jogadas e passam a vez.`);endTurn();return;}
   doMove(best);
-}
-function botShop(col){
-  const inv=S.inv[col];if(inv.length>=3||Math.random()<.5)return;
-  const wish=['double','reload','shield','freeze','crown'].filter(id=>ITEMS[id].price<=S.coins[col]);
-  if(!wish.length)return;const id=wish[0];S.coins[col]-=ITEMS[id].price;inv.push(id);addLog(`${ic('cart')} ${COLOR_NAME[col]} compraram ${ITEMS[id].name}`);
 }
 function scoreMove(m,col){
   const B=S.board,P=B[m.fr][m.fc];
   let s=Math.random()*4;
   const victim=m.ep?B[m.fr][m.tc]:B[m.tr][m.tc];
   if(victim)s+=victim.type==='k'?100000:VAL[victim.type]*10;
-  if(S.powerups[key(m.tr,m.tc)])s+=13;
+  if(S.powerups[key(m.tr,m.tc)])s+=10;
   if(P.type!=='k'&&S.meteors.some(x=>x.r===m.tr&&x.c===m.tc))s-=VAL[P.type]*9;
   if(P.type!=='k'&&S.meteors.some(x=>x.r===m.fr&&x.c===m.fc))s+=VAL[P.type]*8;
   if(P.type==='p'&&(m.tr===0||m.tr===7))s+=80;
@@ -751,20 +709,15 @@ function scoreMove(m,col){
   if(m.castle){const row=m.tr;if(m.castle==='k'){B2[row][5]=B2[row][7];B2[row][7]=null;}else{B2[row][3]=B2[row][0];B2[row][0]=null;}}
   return s-worstThreat(B2,col)*.9;
 }
-function pieceVal(T,col){if(!T)return 0;if(T.type==='k'){if(S.ply<SUDDEN||shielded(T))return 0;return T.color!==col?100:-100;}if(shielded(T))return T.color!==col?.5:0;return T.color!==col?VAL[T.type]:-VAL[T.type]*1.3;}
+function pieceVal(T,col){if(!T||T.type==='k')return 0;if(shielded(T))return T.color!==col?.5:0;return T.color!==col?VAL[T.type]:-VAL[T.type]*1.3;}
 function botWeapon(col){
   const B=S.board;let best=null;
   for(let r=0;r<8;r++)for(let c=0;c<8;c++){
     const P=B[r][c];if(!P||P.color!==col||!weaponReady(P))continue;
     for(const[tr,tc]of weaponTargets(r,c)){
       let v=0;
-      switch(P.type){
-        case'p':case'b':v=pieceVal(B[tr][tc],col);break;
-        case'r':{const d=cannonDirs(r,c,col).find(d=>d.first[0]===tr&&d.first[1]===tc);v=d.hits.reduce((a,[hr,hc])=>a+pieceVal(B[hr][hc],col),0);break;}
-        case'q':for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){const xr=tr+dr,xc=tc+dc;if(inB(xr,xc))v+=pieceVal(B[xr][xc],col);}break;
-        case'n':{const T=B[tr][tc],nr=tr+(tr-r),nc=tc+(tc-c);v=shielded(T)?.5:(inB(nr,nc)&&!B[nr][nc])?.4:pieceVal(T,col);break;}
-        case'k':v=hammerVictims(r,c,col).reduce((a,[vr,vc])=>a+VAL[B[vr][vc].type]*.4,0);break;
-      }
+      if(P.type==='q'){for(const[dr,dc]of D8.concat([[0,0]]))if(inB(tr+dr,tc+dc))v+=pieceVal(B[tr+dr][tc+dc],col);}
+      else v=pieceVal(B[tr][tc],col);
       if(v>=1&&(!best||v>best.v))best={r,c,tr,tc,v};
     }
   }
@@ -773,35 +726,30 @@ function botWeapon(col){
 function botItem(col){
   const inv=S.inv[col];if(!inv.length)return false;
   const has=id=>inv.includes(id),B=S.board,en=opp(col);
-  const threats=allMoves(B,en,S.ep).filter(m=>m.cap).map(m=>[m.tr,m.tc,m.fr,m.fc]);
-  const kingIn=kingAttacked(B,col),kp=findKing(B,col);
+  const threats=allMoves(B,en,S.ep).filter(m=>m.cap);
+  const kp=findKing(B,col),kingIn=kingAttacked(B,col);
   if(kingIn&&kp){
     if(has('shield')&&!shielded(B[kp[0]][kp[1]])){applyItem('shield',col,null,kp[0],kp[1]);return'free';}
-    if(has('freeze')){const t=threats.find(t=>t[0]===kp[0]&&t[1]===kp[1]);if(t){const A=B[t[2]][t[3]];if(A.type!=='k'&&!shielded(A)&&!frozen(A)){applyItem('freeze',col,null,t[2],t[3]);return'free';}}}
+    if(has('freeze')){const t=threats.find(t=>t.tr===kp[0]&&t.tc===kp[1]);if(t&&B[t.fr][t.fc].type!=='k'){applyItem('freeze',col,null,t.fr,t.fc);return'free';}}
     if(has('teleport')){const sq=itemTargets({id:'teleport',step:1,data:{r:kp[0],c:kp[1]}},col).filter(([r,c])=>{const B2=B.map(x=>x.slice());B2[r][c]=B2[kp[0]][kp[1]];B2[kp[0]][kp[1]]=null;return!kingAttacked(B2,col);});
       if(sq.length){const[r,c]=rnd(sq);applyItem('teleport',col,{r:kp[0],c:kp[1]},r,c);return'turn';}}
   }
   if(has('double')){applyItem('double',col);return'free';}
-  if(has('reload')){let n=0;for(const row of B)for(const P of row)if(P&&P.color===col&&P.cd>S.ply&&VAL[P.type]>=3)n++;if(n>=2){applyItem('reload',col);return'free';}}
-  if(has('shield')){const t=threats.map(t=>[t[0],t[1]]).filter(([r,c])=>B[r][c]&&VAL[B[r][c].type]>=5&&!defended(B,r,c,col)).sort((a,b)=>VAL[B[b[0]][b[1]].type]-VAL[B[a[0]][a[1]].type])[0];
-    if(t){applyItem('shield',col,null,t[0],t[1]);return'free';}}
-  if(has('freeze')){const t=threats.filter(t=>B[t[0]][t[1]]&&VAL[B[t[0]][t[1]].type]>=3).map(t=>[t[2],t[3]]).filter(x=>B[x[0]][x[1]].type!=='k'&&!shielded(B[x[0]][x[1]])&&!frozen(B[x[0]][x[1]]))[0];
-    if(t){applyItem('freeze',col,null,t[0],t[1]);return'free';}}
-  if(has('crown')){let pw=null;for(let r=0;r<8;r++)for(let c=0;c<8;c++){const P=B[r][c];if(P&&P.color===col&&P.type==='p'){const adv=col==='b'?r:7-r;if(!pw||adv>pw[2])pw=[r,c,adv];}}if(pw&&pw[2]>=3){applyItem('crown',col,null,pw[0],pw[1]);return'turn';}}
-  if(has('revive')){const t=bestLost(col);if(t&&VAL[t]>=3){const sq=itemTargets({id:'revive',step:0},col);if(sq.length){const[r,c]=rnd(sq);applyItem('revive',col,null,r,c);return'turn';}}}
+  if(has('reload')){let n=0;for(const row of B)for(const P of row)if(P&&P.color===col&&!weaponReady(P)&&!frozen(P))n++;if(n>=4){applyItem('reload',col);return'free';}}
+  if(has('shield')){const t=threats.map(t=>[t.tr,t.tc]).filter(([r,c])=>B[r][c]&&VAL[B[r][c].type]>=5&&!shielded(B[r][c])&&!defended(B,r,c,col))[0];if(t){applyItem('shield',col,null,t[0],t[1]);return'free';}}
+  if(has('freeze')){const t=threats.filter(t=>B[t.tr][t.tc]&&VAL[B[t.tr][t.tc].type]>=3&&B[t.fr][t.fc].type!=='k'&&!frozen(B[t.fr][t.fc]))[0];if(t){applyItem('freeze',col,null,t.fr,t.fc);return'free';}}
   return false;
 }
 
 /* =====================================================================
    RENDER
    ===================================================================== */
-function pieceHTML(P,anim){
+function pieceHTML(P,anim,r,c){
   const st=profile.set,s=SETS[st],fz=frozen(P),sh=shielded(P);
   let badges='';
   if(sh)badges+=`<span class="badge b-shield">${ic('shield','')}</span>`;
   if(fz)badges+=`<span class="badge b-frozen">${ic('freeze','')}</span>`;
-  if(P.vet)badges+=`<span class="badge b-vet">${ic('star','')}</span>`;
-  if(S&&!S.over&&P.color===S.turn&&!isBot(P.color)&&weaponReady(P))badges+='<span class="wdot"></span>';
+  if(S&&!S.over&&!S.pending&&P.color===S.turn&&!isBot(P.color)&&r!==undefined&&weaponReady(P)&&weaponTargets(r,c).length)badges+=`<span class="wready">${ic('target','')}</span>`;
   const glow=s.neon?` style="--glow:${s[P.color==='w'?'w':'bl'].s}"`:'';
   return `<div class="pc ${s.kind==='pix'?'pixel':''} ${s.neon?'neon':''}${fz?' is-frozen':''}${sh?' is-shield':''}${anim?' pop':''}"${glow}>${sprite(P.type,P.color,st)}${badges}</div>`;
 }
@@ -809,11 +757,11 @@ function miniHTML(type,color,setId){const st=setId||profile.set,s=SETS[st];const
 let hoverSq=null;
 function render(){
   const B=S.board,col=S.turn;
-  let tgts=[],wmode=false,isBomb=false;
-  if(S.pending){if(S.pending.kind==='weapon'){tgts=weaponTargets(S.pending.r,S.pending.c);wmode=true;isBomb=B[S.pending.r][S.pending.c]?.type==='q';}else tgts=itemTargets(S.pending,col);}
-  const tset=new Set(tgts.map(([r,c])=>key(r,c)));
+  const itgt=S.pending?new Set(itemTargets(S.pending,col).map(([r,c])=>key(r,c))):new Set();
+  const wset=new Set(S.wt.map(([r,c])=>key(r,c)));
+  const selQ=S.sel&&B[S.sel.r][S.sel.c]?.type==='q';
   const blast=new Set();
-  if(isBomb&&hoverSq&&tset.has(key(hoverSq[0],hoverSq[1])))for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++)blast.add(key(hoverSq[0]+dr,hoverSq[1]+dc));
+  if(selQ&&hoverSq&&wset.has(key(hoverSq[0],hoverSq[1])))for(const[dr,dc]of D8.concat([[0,0]]))blast.add(key(hoverSq[0]+dr,hoverSq[1]+dc));
   const mmap=new Map(S.moves.map(m=>[key(m.tr,m.tc),m]));
   const kc=!S.over&&kingAttacked(B,col)?findKing(B,col):null;
   let h='';
@@ -822,17 +770,17 @@ function render(){
     let cls='sq '+((r+c)%2?'d':'l');
     if(S.last&&((S.last.fr===r&&S.last.fc===c)||(S.last.tr===r&&S.last.tc===c)))cls+=' last';
     if(S.sel&&S.sel.r===r&&S.sel.c===c)cls+=' sel';
-    if(S.pending&&S.pending.kind==='weapon'&&S.pending.r===r&&S.pending.c===c)cls+=' sel';
-    if(S.pending&&S.pending.kind==='item'&&S.pending.step===1&&S.pending.data.r===r&&S.pending.data.c===c)cls+=' sel';
-    if(tset.has(k))cls+=wmode?(isBomb?' wtgt area':' wtgt'):' tgt';
+    if(S.pending&&S.pending.step===1&&S.pending.data.r===r&&S.pending.data.c===c)cls+=' sel';
+    if(itgt.has(k))cls+=' tgt';
     if(blast.has(k))cls+=' blast';
     if(kc&&kc[0]===r&&kc[1]===c)cls+=' check';
     let inner='';
     if(c===0)inner+=`<span class="coord rk">${8-r}</span>`;
     if(r===7)inner+=`<span class="coord fl">${'abcdefgh'[c]}</span>`;
-    if(S.powerups[k]){const id=S.powerups[k];inner+=`<span class="pu">${ic(id==='coins'?'coins':id,'')}</span>`;}
-    if(P)inner+=pieceHTML(P,S.anim===k);
+    if(S.powerups[k])inner+=`<span class="pu">${ic(S.powerups[k],'')}</span>`;
+    if(P)inner+=pieceHTML(P,S.anim===k,r,c);
     const m=mmap.get(k);if(m)inner+=m.cap?'<span class="ring"></span>':'<span class="dot"></span>';
+    if(wset.has(k))inner+='<span class="xh"></span>';
     if(S.meteors.some(x=>x.r===r&&x.c===c))inner+=`<span class="meteor">${ic('meteor','')}</span>`;
     h+=`<div class="${cls}" data-r="${r}" data-c="${c}" role="button" aria-label="${sqName(r,c)}">${inner}</div>`;
   }
@@ -846,41 +794,34 @@ function renderPanels(){
   for(const col of['b','w']){
     const el=$('#panel-'+col),me=S.turn===col&&!S.over,human=!isBot(col);
     const inv=S.inv[col];let slots='';
-    for(let i=0;i<5;i++){const id=inv[i];
-      if(id){const it=ITEMS[id],can=me&&human&&!S.usedItem&&!S.pending;slots+=`<button class="slot" title="${it.name}: ${it.desc}" aria-label="${it.name}" ${can?'':'disabled'} data-item="${i}">${ic(id,'')}</button>`;}
+    for(let i=0;i<MAX_ITEMS;i++){const id=inv[i];
+      if(id){const it=ITEMS[id],can=me&&human&&!S.pending;slots+=`<button class="slot" title="${it.name}: ${it.desc}" ${can?'':'disabled'} data-item="${i}">${ic(id,'')}<small>${it.name}</small></button>`;}
       else slots+='<div class="slot"></div>';}
     const capt=S.lost[opp(col)].slice().sort((a,b)=>VAL[b]-VAL[a]).map(t=>`<span class="mini">${miniHTML(t,opp(col))}</span>`).join('');
-    let ready=0,total=0;for(const row of S.board)for(const P of row)if(P&&P.color===col){total++;if(weaponReady(P))ready++;}
-    el.innerHTML=`<div class="ph"><div class="pname"><span class="chip ${col}"></span>${COLOR_NAME[col]}${isBot(col)?' '+ic('bot'):''}</div>${me?'<span class="turnflag">SUA VEZ</span>':''}</div>
-      <div class="ph" style="margin-top:6px"><span class="coins">${ic('coin')} ${S.coins[col]}</span><span class="hint" style="margin:0">armas prontas: <b>${ready}/${total}</b></span></div>
-      <div class="lbl">Mochila</div><div class="inv">${slots}</div>
-      ${human?`<div class="row"><button class="btn small" data-shop="1" ${me?'':'disabled'}>${ic('cart')} Loja de itens</button></div>`:''}
-      <div class="lbl">Capturadas</div><div class="lost">${capt||'<span class="hint" style="margin:0">nenhuma ainda</span>'}</div>`;
+    el.innerHTML=`<div class="ph"><div class="pname"><span class="chip ${col}"></span>${COLOR_NAME[col]}${isBot(col)?' '+ic('bot'):''}</div>${me?'<span class="turnflag">VEZ</span>':''}</div>
+      <div class="lbl">Itens ${human?'<span style="text-transform:none;letter-spacing:0">(clique para usar)</span>':''}</div><div class="inv">${slots}</div>
+      <div class="lbl">Capturou</div><div class="lost">${capt||'<span class="hint" style="margin:0">nada ainda</span>'}</div>`;
     el.classList.toggle('active',me);
   }
 }
 function renderStatus(kc){
   const st=$('#status');st.classList.remove('alert');
-  if(S.over){st.innerHTML=`${ic('trophy')} <b>${COLOR_NAME[S.winner]} venceram!</b> <button class="btn small" id="sNew">Jogar de novo</button>`;return;}
-  if(S.pending){
-    if(S.pending.kind==='weapon'){const P=S.board[S.pending.r][S.pending.c],W=WEAPONS[P.type];
-      st.innerHTML=`${ic(W.icon)} <b>${W.name}:</b> ${P.type==='q'?'escolha onde a bomba cai':'escolha o alvo'} <button class="btn small" id="sCancel">Cancelar</button>`;}
-    else{const p=S.pending,it=ITEMS[p.id];st.innerHTML=`${ic(p.id)} <b>${it.name}:</b> ${PROMPTS[p.id][p.step]} <button class="btn small" id="sCancel">Cancelar</button>`;}
-    return;
+  if(S.over){st.innerHTML=`${ic('trophy')} <b>${S.winner?COLOR_NAME[S.winner]+' venceram!':'Empate!'}</b> <button class="btn small" id="sNew">Jogar de novo</button>`;return;}
+  if(S.pending){const p=S.pending,it=ITEMS[p.id];
+    const msg={shield:'clique numa peça sua',freeze:'clique numa peça inimiga',teleport:p.step?'clique numa casa vazia':'clique na peça que vai teletransportar'}[p.id];
+    st.innerHTML=`${ic(p.id)} <b>${it.name}:</b> ${msg} <button class="btn small" id="sCancel">Cancelar</button>`;return;}
+  if(isBot(S.turn)){st.innerHTML=`${ic('bot')} ${COLOR_NAME[S.turn]} pensando…`;return;}
+  let html='';
+  if(kc){st.classList.add('alert');html=`${ic('warn')} <b>XEQUE!</b> Salve seu Rei — `;}
+  else html=`<span class="hint" style="margin:0">Rodada ${Math.floor(S.ply/2)+1}/${MAX_ROUNDS}</span> Vez das <b>${COLOR_NAME[S.turn]}</b>${S.extra?' (jogada extra)':''} — `;
+  if(!S.sel)html+='escolha uma peça';
+  else{const P=S.board[S.sel.r][S.sel.c],W=WEAPONS[P.type];
+    if(frozen(P))html+=`${NAMES[P.type]} está congelado`;
+    else if(!weaponReady(P))html+=`${NAMES[P.type]}: só pode mover (${W.name} recarrega em ${cdLeft(P)})`;
+    else if(S.wt.length)html+=`${NAMES[P.type]}: mova ou clique na <b style="color:#ff1744">mira</b> para usar ${ic(W.icon)} ${W.name}`;
+    else html+=`${NAMES[P.type]}: mova (nenhum alvo para ${W.name})`;
   }
-  const who=COLOR_NAME[S.turn]+(isBot(S.turn)?' (bot pensando…)':'');
-  let html=kc?`${ic('warn')} <b>XEQUE!</b> Proteja o Rei das ${COLOR_NAME[S.turn]}!`:`Vez das <b>${who}</b>`;
-  if(kc)st.classList.add('alert');
-  if(S.extra)html+=` — ${ic('double')} <b>ação extra</b>`;
-  if(S.sel&&isHumanTurn()){
-    const P=S.board[S.sel.r][S.sel.c];
-    if(P&&P.color===S.turn){const W=WEAPONS[P.type];
-      if(frozen(P))html+=` <span class="wbar">${ic('freeze')} <span class="cd">congelada</span></span>`;
-      else if(weaponReady(P))html+=` <span class="wbar">${ic(W.icon)} ${W.name} <button class="btn small danger" id="sAtk" title="${W.desc} (tecla A)">Atacar</button></span>`;
-      else html+=` <span class="wbar">${ic(W.icon)} ${W.name} <span class="cd">recarga: ${cdLeft(P)} turno(s)</span></span>`;}
-  }
-  const noMoves=isHumanTurn()&&!allMoves(S.board,S.turn,S.ep).length;
-  if(noMoves)html+=' <button class="btn small" id="sPass">Passar a vez</button>';
+  if(!allMoves(S.board,S.turn,S.ep).length)html+=' <button class="btn small" id="sPass">Passar a vez</button>';
   st.innerHTML=html;
 }
 
@@ -891,33 +832,45 @@ function fxText(r,c,t,color){const[x,y]=center(r,c);const d=document.createEleme
 function fxBurst(r,c,color,n=8){const[x,y,s]=center(r,c);for(let i=0;i<n;i++){const d=document.createElement('div');d.className='part';d.style.background=color;d.style.color=color;const a=Math.random()*Math.PI*2,dist=s*(.5+Math.random()*.9);d.style.left=x+'px';d.style.top=y+'px';d.style.setProperty('--dx',Math.cos(a)*dist+'px');d.style.setProperty('--dy',Math.sin(a)*dist+'px');fxAdd(d,760);}}
 function fxIcon(r,c,name){const[x,y,s]=center(r,c);const d=document.createElement('div');d.className='ficon';d.innerHTML=ic(name,'');d.style.left=x+'px';d.style.top=y+'px';d.style.width=d.style.height=s*.7+'px';fxAdd(d,820);}
 function fxProjectile(r1,c1,r2,c2,name){const[x1,y1,s]=center(r1,c1),[x2,y2]=center(r2,c2);const d=document.createElement('div');d.className='proj';d.innerHTML=ic(name,'');d.style.width=d.style.height=s*.5+'px';d.style.left=x1+'px';d.style.top=y1+'px';
-  const ang=Math.atan2(y2-y1,x2-x1)*180/Math.PI;if(name!=='bomb')d.firstChild.style.transform=`rotate(${ang+45}deg)`;fxAdd(d,320);requestAnimationFrame(()=>requestAnimationFrame(()=>{d.style.left=x2+'px';d.style.top=y2+'px';}));}
+  if(name!=='bomb')d.firstChild.style.transform=`rotate(${Math.atan2(y2-y1,x2-x1)*180/Math.PI+45}deg)`;fxAdd(d,320);requestAnimationFrame(()=>requestAnimationFrame(()=>{d.style.left=x2+'px';d.style.top=y2+'px';}));}
 function fxBoom(r,c){const[x,y,s]=center(r,c);const d=document.createElement('div');d.className='boom';d.style.left=x+'px';d.style.top=y+'px';d.style.width=d.style.height=s*3.4+'px';fxAdd(d,560);fxBurst(r,c,'#ff9800',12);fxBurst(r,c,'#ffeb3b',6);}
-function fxWave(r,c){const[x,y,s]=center(r,c);const d=document.createElement('div');d.className='wave';d.style.left=x+'px';d.style.top=y+'px';d.style.width=d.style.height=s*3.2+'px';fxAdd(d,620);}
 function fxBeam(r1,c1,r2,c2,bg){const[x1,y1]=center(r1,c1),[x2,y2]=center(r2,c2);const d=document.createElement('div');d.className='beam';d.style.left=x1+'px';d.style.top=(y1-3)+'px';d.style.width=Math.hypot(x2-x1,y2-y1)+'px';d.style.transform=`rotate(${Math.atan2(y2-y1,x2-x1)}rad)`;d.style.background=bg;d.style.boxShadow='0 0 12px #fff59d';fxAdd(d,560);}
 function shake(){const w=$('#wrap');w.classList.remove('shake');void w.offsetWidth;w.classList.add('shake');}
 function addLog(t){S.logs.unshift(t);S.logs.length=Math.min(S.logs.length,40);$('#log').innerHTML=S.logs.map(x=>`<div>${x}</div>`).join('');}
 let toastTimer=null;
 function toast(t){const st=$('#status');st.innerHTML=t;clearTimeout(toastTimer);toastTimer=setTimeout(()=>S&&render(),1700);}
 
+/* ---------- Diagramas das armas ---------- */
+function diagram(type){
+  const r0=type==='p'?4:3,c0=3,map={};
+  // movimento em tabuleiro 7x7 vazio
+  const mv=[];const inD=(r,c)=>r>=0&&r<7&&c>=0&&c<7;
+  const slide=dirs=>{for(const[dr,dc]of dirs)for(let s=1;s<7;s++){if(inD(r0+dr*s,c0+dc*s))mv.push([r0+dr*s,c0+dc*s]);}};
+  if(type==='r')slide(D4);if(type==='b')slide(DX);if(type==='q')slide(D8);
+  if(type==='n')for(const[dr,dc]of DL)mv.push([r0+dr,c0+dc]);
+  if(type==='k')for(const[dr,dc]of D8)mv.push([r0+dr,c0+dc]);
+  if(type==='p'){mv.push([r0-1,c0],[r0-2,c0]);}
+  for(const[r,c]of mv)if(inD(r,c))map[r+','+c]='mv';
+  for(const[r,c]of weaponPattern(type,'w',r0,c0))if(inD(r,c))map[r+','+c]='at';
+  let h='';for(let r=0;r<7;r++)for(let c=0;c<7;c++){const k=r+','+c;h+=`<div class="${(r+c)%2?'d':'l'} ${map[k]||''}">${r===r0&&c===c0?miniHTML(type,'w','classic'):''}</div>`;}
+  return `<div class="diag">${h}</div>`;
+}
+
 /* ---------- Modais ---------- */
 function openModal(html){$('#modal').innerHTML=html;$('#modalBg').classList.add('open');}
 function closeModal(){$('#modalBg').classList.remove('open');}
 let nm={mode:'bot',meteors:true};
-function weaponCards(){return Object.entries(WEAPONS).map(([t,W])=>`<div class="wcard"><div class="pcs">${miniHTML(t,'w')}<span class="wi">${ic(W.icon,'')}</span></div><div><b>${NAMES[t]}: ${W.name}</b><span>${W.desc} Recarga: ${W.cd} turnos.</span></div></div>`).join('');}
+function weaponCards(){return Object.entries(WEAPONS).map(([t,W])=>`<div class="wcard">${diagram(t)}<div><b>${ic(W.icon)} ${NAMES[t]} — ${W.name}</b><span>${W.desc}</span></div></div>`).join('');}
 function showNewGame(){
   const md=(id,t,d)=>`<button class="mode ${nm.mode===id?'on':''}" data-mode="${id}"><b>${t}</b><span>${d}</span></button>`;
-  openModal(`<h2>${miniHTML('n','w')} Novo jogo</h2><p class="hint">Xadrez onde <b>cada peça tem uma arma</b>. Vence quem capturar o Rei inimigo.</p>
-    <div class="modes">${md('bot','Contra o bot','Você joga de Brancas contra a máquina.')}${md('2p','2 jogadores','Revezem no mesmo aparelho.')}${md('demo','Bot vs bot','Assista o caos acontecer.')}</div>
-    <label class="tog"><input type="checkbox" id="nmMet" ${nm.meteors?'checked':''}> Chuva de meteoros (a cada 10 jogadas)</label>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">${S?'<button class="btn" data-close="1">Cancelar</button>':''}<button class="btn primary" id="nmGo">Começar!</button></div>`);
-}
-function showShop(){
-  if(!S||S.over||!isHumanTurn())return;const col=S.turn,full=S.inv[col].length>=5;
-  const cards=Object.entries(ITEMS).filter(([id])=>id!=='coins').map(([id,it])=>`<div class="card"><div class="ic2">${ic(id,'')}</div><div class="nm">${it.name}</div><div class="ds">${it.desc}${it.free?' <b>Não gasta a ação.</b>':''}</div>
-    <button class="btn small ${S.coins[col]>=it.price&&!full?'primary':''}" data-buy="${id}" ${S.coins[col]<it.price||full?'disabled':''}>${ic('coin')} ${it.price}</button></div>`).join('');
-  openModal(`<div class="mhead"><h2>${ic('cart')} Loja — ${COLOR_NAME[col]}</h2><button class="btn small" data-close="1">Fechar</button></div>
-    <p class="hint">Você tem <b>${ic('coin')} ${S.coins[col]}</b>. Comprar não gasta seu turno. ${full?'<b>Mochila cheia (5 itens).</b>':''} Ganhe moedas capturando peças (+valor da peça) e a cada turno (+1).</p><div class="grid-cards">${cards}</div>`);
+  openModal(`<h2>Novo jogo</h2>
+    <div class="howto"><div>${ic('sparkle')}<span>Xadrez normal, mas <b>toda peça pode atirar</b> sem sair do lugar.</span></div>
+    <div><span class="lg-dot"></span><span><b>Ponto</b> = mover.</span></div>
+    <div><span class="lg-xh"></span><span><b>Mira vermelha</b> = atirar. Depois a arma recarrega por ${CD} turnos.</span></div>
+    <div>${ic('crown')}<span>Ganha quem <b>capturar o Rei</b> (armas não acertam Reis). Se chegar a ${MAX_ROUNDS} rodadas, ganha quem tiver mais peças.</span></div></div>
+    <div class="modes">${md('bot','Contra o bot','Você joga de Brancas.')}${md('2p','2 jogadores','No mesmo aparelho.')}${md('demo','Bot vs bot','Só assistir.')}</div>
+    <label class="tog"><input type="checkbox" id="nmMet" ${nm.meteors?'checked':''}> Meteoros (casas marcadas explodem 2 jogadas depois)</label>
+    <div style="display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:14px;flex-wrap:wrap"><button class="btn small" id="nmHelp">${ic('help')} Ver as armas</button><span style="display:flex;gap:8px">${S?'<button class="btn" data-close="1">Cancelar</button>':''}<button class="btn primary" id="nmGo">Começar!</button></span></div>`);
 }
 function showSkins(){
   const sc=Object.entries(SETS).map(([id,s])=>{const own=profile.sets.includes(id),on=profile.set===id;
@@ -927,68 +880,67 @@ function showSkins(){
     return `<div class="card ${on?'sel':''}"><div class="bprev">${[0,1,2,3].map(i=>`<div style="background:${i%2?b.d:b.l}"></div>`).join('')}</div><div class="nm">${b.name}</div>
     <button class="btn small ${!on?'primary':''}" data-skin="board:${id}" ${on||(!own&&profile.gems<b.price)?'disabled':''}>${on?'Em uso':own?'Usar':ic('gem')+' '+b.price}</button></div>`;}).join('');
   openModal(`<div class="mhead"><h2>${ic('palette')} Skins</h2><button class="btn small" data-close="1">Fechar</button></div>
-    <p class="hint">Você tem <b>${ic('gem')} ${profile.gems}</b>. Ganhe gemas terminando partidas (vencer o bot dá mais!).</p>
+    <p class="hint">Você tem <b>${ic('gem')} ${profile.gems}</b> gemas. Ganhe mais terminando partidas.</p>
     <h3>Peças</h3><div class="grid-cards">${sc}</div><h3>Tabuleiros</h3><div class="grid-cards">${bc}</div>`);
 }
 function useSkin(spec){
   const[kind,id]=spec.split(':');const list=kind==='set'?'sets':'boards',cat=kind==='set'?SETS:BOARDS;
-  if(!profile[list].includes(id)){if(profile.gems<cat[id].price)return;profile.gems-=cat[id].price;profile[list].push(id);SFX.coin();}
+  if(!profile[list].includes(id)){if(profile.gems<cat[id].price)return;profile.gems-=cat[id].price;profile[list].push(id);SFX.power();}
   profile[kind==='set'?'set':'board']=id;saveProfile();if(S)render();showSkins();
 }
 function showHelp(){
   openModal(`<div class="mhead"><h2>${ic('help')} Como jogar</h2><button class="btn small" data-close="1">Fechar</button></div>
-  <ul class="rules">
-   <li>As peças se movem como no xadrez (roque, en passant e promoção). <b>Vence quem capturar o Rei</b> — não existe xeque-mate, então fique de olho no aviso de <b>XEQUE</b>.</li>
-   <li><b>Cada peça tem uma arma.</b> No seu turno você pode <b>mover</b> ou <b>atacar</b>: selecione a peça e clique em <b>Atacar</b> (ou tecle A). Depois a arma precisa recarregar. Peças com arma pronta mostram um <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff9100;border:2px solid #fff3e0"></span> laranja.</li>
-   <li>As armas começam carregando: ficam prontas a partir do seu 3º turno.</li>
-   <li>Reis são imunes às armas (até a morte súbita). Escudos absorvem um golpe.</li>
-   <li><b>Power-ups</b> aparecem no meio do tabuleiro a cada 3 jogadas: passe por cima para pegar. Mochila de até 5 itens, <b>1 item por turno</b>.</li>
-   <li><b>Moedas:</b> +1 por turno e +valor da peça abatida (peão 1, cavalo/bispo 3, torre 5, dama 9). Gaste na loja.</li>
-   <li>Peça que abate 2 inimigos vira <b>Veterana</b>: escudo grátis e arma recarregada.</li>
-   <li><b>Meteoros:</b> casas marcadas em vermelho serão atingidas em 2 jogadas.</li>
-   <li><b>Morte súbita:</b> após 120 jogadas, Reis perdem a imunidade e caem mais meteoros.</li>
-   <li><b>Gemas</b> ganhas no fim das partidas desbloqueiam skins de peças e tabuleiros.</li>
-  </ul>
-  <h3>Arsenal</h3><div class="wtable">${weaponCards()}</div>
-  <h3>Power-ups</h3><div class="grid-cards">${Object.entries(ITEMS).filter(([id])=>id!=='coins').map(([id,i])=>`<div class="card"><div class="nm">${ic(id)} ${i.name}</div><div class="ds">${i.desc}</div></div>`).join('')}</div>`);
+  <ol class="rules">
+   <li>No seu turno, faça <b>uma</b> coisa: <b>mover</b> uma peça (como no xadrez) <b>ou atirar</b> com ela.</li>
+   <li>Ao selecionar uma peça: <span class="lg-dot"></span> = onde ela pode ir, <span class="lg-xh"></span> = quem ela pode acertar. Atirar destrói o alvo e a peça <b>fica no lugar</b>.</li>
+   <li>Depois de atirar, a arma recarrega por ${CD} turnos. As armas começam carregando (ficam prontas no seu 3º turno). Uma <b>mira pequena</b> na peça avisa que ela tem um alvo agora.</li>
+   <li>Ganha quem <b>capturar o Rei</b> inimigo andando (armas e meteoros não acertam Reis). Também ganha quem deixar o inimigo <b>só com o Rei</b>. Depois de ${MAX_ROUNDS} rodadas, vence quem tiver mais pontos em peças (peão 1, cavalo/bispo 3, torre 5, dama 9).</li>
+   <li>Itens brilhantes aparecem no meio do tabuleiro: passe por cima para pegar (máx. ${MAX_ITEMS}). Usar item <b>não gasta a vez</b> (só o Teleporte).</li>
+  </ol>
+  <h3>Armas <span class="hint">— pontos: mover · mira: atirar</span></h3><div class="wtable">${weaponCards()}</div>
+  <h3>Itens</h3><div class="grid-cards">${Object.entries(ITEMS).map(([id,i])=>`<div class="card"><div class="nm">${ic(id)} ${i.name}</div><div class="ds">${i.desc}</div></div>`).join('')}</div>`);
 }
 function showGameOver(win,why,gems){
-  const youWin=S.mode==='bot'?(win==='w'?'Você venceu!':'O bot venceu…'):`${COLOR_NAME[win]} venceram!`;
-  openModal(`<div class="big">${ic(S.mode==='bot'&&win==='b'?'skull':'trophy','')}</div><h2 style="justify-content:center">${youWin}</h2><p style="text-align:center" class="hint">${why}</p>
-   ${gems?`<p style="text-align:center;font-size:1.2rem">+${gems} ${ic('gem')} gemas</p>`:''}
+  const title=!win?'Empate!':S.mode==='bot'?(win==='w'?'Você venceu!':'O bot venceu…'):`${COLOR_NAME[win]} venceram!`;
+  openModal(`<div class="big">${ic(S.mode==='bot'&&win==='b'?'skull':'trophy','')}</div><h2 style="justify-content:center">${title}</h2><p style="text-align:center" class="hint">${why}</p>
+   ${gems?`<p style="text-align:center;font-size:1.2rem">+${gems} ${ic('gem')} gemas para skins</p>`:''}
    <div style="display:flex;gap:8px;justify-content:center;margin-top:12px"><button class="btn" id="goSkins">${ic('palette')} Skins</button><button class="btn primary" id="goNew">Jogar de novo</button></div>`);
 }
 
 /* ---------- Eventos ---------- */
+function selectPiece(r,c){
+  S.sel={r,c};S.moves=pseudoMoves(S.board,r,c,S.ep);S.wt=weaponTargets(r,c);
+}
 $('#board').addEventListener('click',e=>{
   const sq=e.target.closest('.sq');if(!sq||!S||S.over||!isHumanTurn())return;
   ac();
   const r=+sq.dataset.r,c=+sq.dataset.c;
   if(S.pending){handlePendingClick(r,c);return;}
+  if(S.sel){
+    const m=S.moves.find(m=>m.tr===r&&m.tc===c);if(m){S.sel=null;S.moves=[];S.wt=[];doMove(m);return;}
+    if(S.wt.some(([a,b])=>a===r&&b===c)){useWeapon(S.sel.r,S.sel.c,r,c);return;}
+  }
   const P=S.board[r][c];
-  if(S.sel){const m=S.moves.find(m=>m.tr===r&&m.tc===c);if(m){S.sel=null;S.moves=[];doMove(m);return;}}
-  if(P&&P.color===S.turn){
-    if(S.sel&&S.sel.r===r&&S.sel.c===c){S.sel=null;S.moves=[];}
-    else{S.sel={r,c};S.moves=pseudoMoves(S.board,r,c,S.ep);if(frozen(P)){render();toast(`${ic('freeze')} Essa peça está congelada!`);SFX.freeze();return;}}
-  }else{S.sel=null;S.moves=[];}
+  if(P&&P.color===S.turn&&!(S.sel&&S.sel.r===r&&S.sel.c===c)){
+    selectPiece(r,c);
+    if(frozen(P)){SFX.freeze();}
+  }else{S.sel=null;S.moves=[];S.wt=[];}
   render();
 });
 $('#board').addEventListener('mouseover',e=>{
-  if(!S||!S.pending||S.pending.kind!=='weapon')return;const sq=e.target.closest('.sq');if(!sq)return;
+  if(!S||!S.sel||S.board[S.sel.r][S.sel.c]?.type!=='q')return;const sq=e.target.closest('.sq');if(!sq)return;
   const r=+sq.dataset.r,c=+sq.dataset.c;if(hoverSq&&hoverSq[0]===r&&hoverSq[1]===c)return;
-  hoverSq=[r,c];if(S.board[S.pending.r][S.pending.c]?.type==='q')render();
+  hoverSq=[r,c];render();
 });
 document.addEventListener('click',e=>{
   const t=e.target.closest('button');if(!t)return;
   if(t.dataset.item!==undefined){ac();startItem(+t.dataset.item);}
-  else if(t.dataset.shop){showShop();}
-  else if(t.dataset.buy){buyItem(t.dataset.buy);}
   else if(t.dataset.skin){useSkin(t.dataset.skin);}
   else if(t.dataset.close){closeModal();}
   else if(t.dataset.mode){nm.mode=t.dataset.mode;nm.meteors=$('#nmMet').checked;showNewGame();}
   else if(t.id==='nmGo'){nm.meteors=$('#nmMet').checked;closeModal();ac();newGame(nm.mode,nm.meteors);}
+  else if(t.id==='nmHelp'){showHelp();}
   else if(t.id==='sCancel'){cancelPending();}
-  else if(t.id==='sAtk'){ac();startWeapon();}
   else if(t.id==='sPass'){addLog(`${COLOR_NAME[S.turn]} passaram a vez.`);endTurn();}
   else if(t.id==='sNew'||t.id==='goNew'){showNewGame();}
   else if(t.id==='goSkins'){showSkins();}
@@ -998,18 +950,16 @@ $('#bSkins').onclick=showSkins;
 $('#bHelp').onclick=showHelp;
 $('#bMute').onclick=()=>{profile.muted=!profile.muted;saveProfile();$('#bMute').innerHTML=ic(profile.muted?'mute':'sound');};
 $('#modalBg').addEventListener('click',e=>{if(e.target.id==='modalBg'&&S)closeModal();});
-document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){if($('#modalBg').classList.contains('open')&&S)closeModal();else cancelPending();}
-  else if((e.key==='a'||e.key==='A')&&!$('#modalBg').classList.contains('open'))startWeapon();
-});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('#modalBg').classList.contains('open')&&S)closeModal();else{cancelPending();if(S&&S.sel){S.sel=null;S.moves=[];S.wt=[];render();}}}});
 
 buildDefs();
 $('#logo').innerHTML=miniHTML('n','w','classic');
 $('#bSkins').innerHTML=ic('palette')+' Skins';
 $('#bHelp').innerHTML=ic('help')+' Regras';
+$('#legend').innerHTML=`<span><span class="lg-dot"></span>mover para cá</span><span><span class="lg-xh"></span>atirar aqui (sua peça fica parada)</span><span>${ic('target')}no canto da peça: ela tem alvo agora</span>`;
 newGame('bot',true);
 showNewGame();
-window.__xc={get S(){return S},newGame,render:()=>render(),useWeapon,weaponTargets};
+window.__xc={get S(){return S},newGame,render:()=>render(),useWeapon,weaponTargets,selectPiece};
 </script>
 </body>
 </html>
