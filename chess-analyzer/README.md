@@ -19,6 +19,8 @@ Também dá para colar um PGN qualquer em **Ou cole um PGN**.
 
 ## Experiência
 
+- **Simulador de partidas**: jogue contra um bot ou assista bot x bot, com Elo de 400 a 2800, e defina quantos lances de cada nota o bot precisa fazer (ex.: 6 brilhantes, 2 capivaradas). O bot avalia vários candidatos do Stockfish por lance, confere a nota real de cada um com a mesma regra da revisão e escolhe para cumprir as metas. No modo assistir, o adversário arma cenários de sacrifício e mantém a partida disputada enquanto faltam brilhantes. No fim, a partida abre direto na revisão, com um quadro de metas cumpridas.
+
 - **Tabuleiro fluido**: as peças são elementos fixos que deslizam entre posições (lances, saltos, giro do tabuleiro), sem recriar nada; partículas com física por tempo real e brilhos em sprites leves.
 - **Quiz**: ligue o Quiz e tente adivinhar a nota de cada lance antes de ver; pontos, acertos exatos e combo.
 - **Explorar**: mexa as peças livremente a partir de qualquer posição, com avaliação do motor, seta de sugestão, desfazer e voltar à partida.

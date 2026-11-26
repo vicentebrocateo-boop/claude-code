@@ -539,6 +539,39 @@ svg.arrows .head { animation: fadeIn .2s ease .22s both; }
 .gcap:empty { display: none; }
 .gchip { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 99px; background: var(--card-2); border: 1px solid var(--line); font: 700 .76rem var(--f-display); color: var(--muted); }
 .gchip.turn { color: #f7c631; border-color: rgba(247,198,49,.4); }
+/* ---------- Simulator ---------- */
+.simopen { margin-top: 4px; }
+.simform { display: grid; gap: 10px; }
+.simform h3 { margin: 4px 0 0; display: flex; justify-content: space-between; align-items: baseline; }
+.simform h3 b { color: var(--fg); font: 800 1rem var(--f-display); letter-spacing: 0; text-transform: none; }
+.seg2 { display: flex; gap: 4px; background: var(--card-2); border: 1px solid var(--line); border-radius: 12px; padding: 4px; }
+.seg2 button { flex: 1; padding: 9px 6px; border-radius: 9px; font: 700 .84rem var(--f-display); color: var(--muted); }
+.seg2 button.on { background: var(--card-3); color: var(--fg); box-shadow: inset 0 0 0 1px var(--line); }
+input[type=range] { width: 100%; accent-color: var(--accent-2); height: 28px; }
+.elomarks { display: flex; justify-content: space-between; font-size: .7rem; color: var(--muted); margin-top: -4px; }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.presets button { padding: 6px 10px; border-radius: 99px; background: var(--card-2); border: 1px solid var(--line); font: 700 .76rem var(--f-display); }
+.goals { display: grid; gap: 4px; }
+.goal { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 4px; border-radius: 10px; }
+.goal:nth-child(odd) { background: rgba(255,255,255,.025); }
+.gl { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.stepper { display: flex; align-items: center; gap: 4px; }
+.stepper button { width: 34px; height: 34px; border-radius: 10px; background: var(--card-3); border: 1px solid var(--line); font: 800 1.1rem var(--f-display); box-shadow: 0 3px 0 #11151b; }
+.stepper button:active { transform: translateY(2px); box-shadow: 0 1px 0 #11151b; }
+.stepper b { min-width: 28px; text-align: center; font: 800 1.05rem var(--f-display); }
+#simBubble.pop { animation: bubbleIn .3s ease both; }
+.goalprog { display: flex; flex-wrap: wrap; gap: 6px; }
+.gp { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 6px; border-radius: 99px; background: var(--card-2); border: 1px solid var(--line); font: 800 .85rem var(--f-display); transition: background .3s, border-color .3s; }
+.gp .ico { width: 20px; height: 20px; }
+.gp.ok { border-color: #81b64c; background: rgba(129,182,76,.16); }
+.dots::after { content: ""; display: inline-block; width: 1.2em; text-align: left; animation: dots 1.2s steps(4) infinite; }
+@keyframes dots { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; } }
+.goalrow { display: grid; grid-template-columns: minmax(0, 1.3fr) 1fr auto; gap: 10px; align-items: center; padding: 6px 2px; animation: viewIn .4s ease both; }
+.goalrow .gbar { height: 8px; border-radius: 99px; background: var(--card-3); overflow: hidden; }
+.goalrow .gbar span { display: block; height: 100%; background: #f7c631; transform-origin: 0 50%; border-radius: 99px; }
+.goalrow.ok .gbar span { background: #81b64c; }
+.goalrow b { font: 800 .95rem var(--f-display); }
+.goalrow.ok b { color: #81b64c; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
 </style>
 </head>
@@ -569,6 +602,7 @@ svg.arrows .head { animation: fadeIn .2s ease .22s both; }
       </div>
       <button class="cta" id="fetchBtn" type="submit">Buscar minhas partidas</button>
       <div class="status" id="status"></div>
+      <button class="ghost simopen" id="simOpen" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 7V4M9 12h.01M15 12h.01M9 16h6"/></svg>Simulador de partidas</button>
       <button class="linkish" id="pgnToggle" type="button">Prefiro colar um PGN</button>
       <div id="pgnBox" hidden style="display:grid;gap:10px">
         <textarea id="pgnInput" placeholder="Cole aqui o PGN da partida"></textarea>
@@ -577,6 +611,50 @@ svg.arrows .head { animation: fadeIn .2s ease .22s both; }
     </form>
   </div>
   <p class="credit">Partidas da API pública do chess.com. Análise feita no seu aparelho com o Stockfish. Peças Staunty (sadsnake1, CC BY-NC-SA 4.0) e cburnett (Colin M.L. Burnett, CC BY-SA 3.0).</p>
+</section>
+
+<!-- SIMULATOR SETUP -->
+<section class="view" id="vSim" hidden>
+  <div class="stack">
+    <div class="card coachline"><div class="mascot" id="simMascot"></div><div class="bubble"><p>Monte uma partida sob medida: escolha o nível do bot e quantos lances de cada nota ele precisa fazer. No fim, a partida abre direto na revisão.</p></div></div>
+    <div class="card simform">
+      <h3>Modo</h3>
+      <div class="seg2" id="simMode"><button data-v="play">Jogar contra o bot</button><button data-v="watch">Assistir bot x bot</button></div>
+      <h3><span id="eloLbl">Elo do bot</span><b id="eloVal" class="num">1200</b></h3>
+      <input type="range" id="simElo" min="400" max="2800" step="100" value="1200" aria-label="Elo do bot">
+      <div class="elomarks"><span>400</span><span>1600</span><span>2800</span></div>
+      <div id="oppRow" hidden style="display:grid;gap:10px">
+        <h3><span>Elo do adversário</span><b id="oppVal" class="num">1000</b></h3>
+        <input type="range" id="simOpp" min="400" max="2800" step="100" value="1000" aria-label="Elo do adversário">
+      </div>
+      <div id="colorRow" style="display:grid;gap:10px"><h3>Sua cor</h3><div class="seg2" id="simColor"><button data-v="w">Brancas</button><button data-v="b">Pretas</button><button data-v="r">Aleatória</button></div></div>
+    </div>
+    <div class="card">
+      <h3>Metas de notas do bot</h3>
+      <div class="presets" id="simPresets"><button data-p="genio">Show de brilhantes</button><button data-p="capivara">Festival de capivaradas</button><button data-p="limpa">Partida limpa</button><button data-p="montanha">Montanha-russa</button><button data-p="none">Sem metas</button></div>
+      <div class="goals" id="simGoals"></div>
+      <p class="muted small" style="margin:10px 0 0">Melhor, excelente, bom, imprecisão, erro e capivarada o bot faz quando você pedir. Brilhantes e ótimos precisam de uma posição que permita um sacrifício: no modo <b>assistir</b>, o adversário arma esses cenários e a partida fica disputada até as metas saírem (na maioria das partidas dá certo, mas não em todas). No modo <b>jogar</b>, as chances dependem dos seus lances.</p>
+    </div>
+    <button class="cta" id="simGo">Começar partida</button>
+  </div>
+</section>
+
+<!-- SIMULATOR GAME -->
+<section class="view" id="vSimPlay" hidden>
+  <div class="review">
+    <div>
+      <div class="pstrip" id="sTop"></div>
+      <div class="boardrow">
+        <div class="evalbar" id="sEvalbar"><div class="w" id="sEvalW"></div></div>
+        <div class="boardwrap" id="simBoard"></div>
+      </div>
+      <div class="pstrip" id="sBot"></div>
+    </div>
+    <div class="side">
+      <div class="coach"><div class="mascot" id="simPlayMascot"></div><div class="bubble" id="simBubble"></div></div>
+      <div class="card"><h3>Metas do bot</h3><div class="goalprog" id="simProg"></div></div>
+    </div>
+  </div>
 </section>
 
 <!-- LIST -->
@@ -632,6 +710,7 @@ svg.arrows .head { animation: fadeIn .2s ease .22s both; }
     <div class="card"><div class="accs" id="accs"></div></div>
     <div class="card"><div class="tally" id="tally"></div></div>
     <div class="card"><h3>Fases da partida</h3><div class="phases" id="phases"></div></div>
+    <div class="card" id="goalsCard" hidden><h3 id="goalsTitle">Metas</h3><div id="goalsList"></div></div>
     <div class="card" id="timeCard" hidden><h3>Tempo</h3><div class="statgrid" id="timeStats"></div></div>
     <div class="card" id="keyCard"><h3>Momentos-chave</h3><div class="keylist" id="keylist"></div></div>
     <div class="card" style="padding:10px"><svg class="graph" id="sumGraph" viewBox="0 0 400 92" preserveAspectRatio="none"></svg></div>
@@ -1565,14 +1644,15 @@ class Engine {
     catch (_) { w = await start(this.spawn(SF_ASM)); }
     this.w = w; w.onerror = null;
     w.onmessage = (e) => { const l = String(e.data); this.listeners.slice().forEach((f) => f(l)); };
-    this.send("setoption name Hash value 32"); this.send("setoption name MultiPV value 2");
+    this.send("setoption name Hash value 32"); this.send("setoption name MultiPV value 2"); this.mpv = 2;
     await this.wait("isready", (l) => l === "readyok");
   }
   send(c) { this.w.postMessage(c); }
   wait(cmd, pred, onLine) { return new Promise((res) => { const f = (l) => { if (onLine) onLine(l); if (pred(l)) { this.listeners = this.listeners.filter((x) => x !== f); res(l); } }; this.listeners.push(f); this.send(cmd); }); }
-  analyze(fen, depth) { const job = this.queue.then(() => this._analyze(fen, depth)); this.queue = job.catch(() => {}); return job; }
-  async _analyze(fen, depth) {
+  analyze(fen, depth, mpv = 2) { const job = this.queue.then(() => this._analyze(fen, depth, mpv)); this.queue = job.catch(() => {}); return job; }
+  async _analyze(fen, depth, mpv) {
     await this.ready;
+    if (this.mpv !== mpv) { this.send("setoption name MultiPV value " + mpv); this.mpv = mpv; }
     const lines = {};
     this.send("position fen " + fen);
     const bm = await this.wait("go depth " + depth, (l) => l.startsWith("bestmove"), (l) => {
@@ -1603,7 +1683,7 @@ const S = { headers: {}, plies: [], fens: [], evals: [], cls: [], idx: 0, user: 
 let rvBoard = null, anBoard = null;
 
 /* ================= Views ================= */
-const VIEWS = ["vHome", "vList", "vAnalyze", "vSummary", "vReview", "vTrainEnd", "vTrophies"];
+const VIEWS = ["vHome", "vList", "vAnalyze", "vSummary", "vReview", "vTrainEnd", "vTrophies", "vSim", "vSimPlay"];
 function show(v) {
   stopAuto(); Stage.clear();
   VIEWS.forEach((x) => { $(x).hidden = x !== v; });
@@ -1614,6 +1694,8 @@ function show(v) {
 }
 $("backBtn").addEventListener("click", () => {
   Sound.ui();
+  if (S.view === "vSimPlay") { if (SIM.g) { SIM.g.tok = Math.random(); SIM.g.over = true; } show("vSim"); renderSimSetup(); return; }
+  if (S.view === "vSim") { show("vHome"); return; }
   if (S.view === "vTrophies") { show(S.prevView || "vHome"); if (S.prevView === "vList") renderGameList(); return; }
   if (S.view === "vReview" || S.view === "vTrainEnd") { exitRetry(); S.mode = "review"; updateScore(); show("vSummary"); return; }
   if (S.view === "vSummary" || S.view === "vAnalyze") { S.token++; if (engine && engine.w) engine.send("stop"); show(GL.games.length ? "vList" : "vHome"); if (GL.games.length) renderGameList(); return; }
@@ -1800,7 +1882,7 @@ async function startAnalysis(pgn, user) {
   try { p = parsePgn(pgn); } catch (e) { setStatus(e.message, true); return; }
   const token = ++S.token, h = p.headers, u = (user || "").toLowerCase();
   const myColor = u && (h.White || "").toLowerCase() === u ? "w" : u && (h.Black || "").toLowerCase() === u ? "b" : null;
-  Object.assign(S, { headers: h, plies: p.hist, fens: p.fens, evals: [], cls: [], idx: 0, user, myColor, mode: "review", retry: null, replay: null, gameKey: pgnKey(pgn), awarded: false, lastW: null, clks: p.clks, quizRes: null, explore: null });
+  Object.assign(S, { headers: h, plies: p.hist, fens: p.fens, evals: [], cls: [], idx: 0, user, myColor, mode: "review", retry: null, replay: null, gameKey: pgnKey(pgn), awarded: false, lastW: null, clks: p.clks, quizRes: null, explore: null, sim: null });
   show("vAnalyze"); Sound.whoosh();
   if (!anBoard) anBoard = new Board($("anBoard"));
   anBoard.setFlip(myColor === "b"); anBoard.render(S.fens[0]);
@@ -1852,15 +1934,30 @@ async function evalPosition(fen, depth) {
   const top = lines[0] || { cp: 0, raw: { type: "cp", v: 0 }, pv: [r.best] };
   return { white: stm === "w" ? top.cp : -top.cp, lines, best: r.best, stm, raw: top.raw };
 }
+// A sacrifice: after the move, material worth at least 2 points more than what was captured is left en prise,
+// either the piece that moved or another one left behind on purpose. With the engine's reply known (strict),
+// an undefended piece counts only if the reply actually takes it.
+function offersMaterial(after, m, reply, strict) {
+  const me = m.color, op = me === "w" ? "b" : "w", capVal = m.captured ? PV[m.captured] : 0;
+  const hangs = (sq, val) => {
+    const att = attackersOf(after, sq, op); if (!att.length) return false;
+    const cheapest = Math.min(...att.map((s) => PV[after.get(s).type] || 99));
+    if (cheapest < val) return true;
+    if (reply && reply.slice(2, 4) === sq) return true;
+    return !strict && !attackersOf(after, sq, me).length;
+  };
+  if (m.piece !== "p" && m.piece !== "k") { const val = PV[m.promotion || m.piece]; if (val - capVal >= 2 && hangs(m.to, val)) return true; }
+  let found = false;
+  after.board().forEach((r, ri) => r.forEach((p, fi) => {
+    if (found || !p || p.color !== me || p.type === "k" || p.type === "p") return;
+    const sq = "abcdefgh"[fi] + (8 - ri); if (sq === m.to) return;
+    if (PV[p.type] - capVal >= 2 && hangs(sq, PV[p.type])) found = true;
+  }));
+  return found;
+}
 function isSacrifice(i) {
   const m = S.plies[i];
-  if (m.piece === "p" || m.piece === "k") return false;
-  const val = PV[m.piece], cap = m.captured ? PV[m.captured] : 0;
-  if (val - cap < 2) return false;
-  const caps = new Chess(S.fens[i + 1]).moves({ verbose: true }).filter((x) => x.to === m.to);
-  if (!caps.length) return false;
-  const cheapest = Math.min(...caps.map((x) => PV[x.piece] || 99)), reply = S.evals[i + 1] && S.evals[i + 1].best;
-  return (reply && reply.slice(2, 4) === m.to) || cheapest < val;
+  return offersMaterial(new Chess(S.fens[i + 1]), m, S.evals[i + 1] && S.evals[i + 1].best, true);
 }
 function npm(fen) { let s = 0; new Chess(fen).board().forEach((r) => r.forEach((p) => { if (p && p.type !== "p" && p.type !== "k") s += PV[p.type]; })); return s; }
 function phaseOf(i) { const n = npm(S.fens[i]); if (n <= 26) return "end"; if (i < 20 && n >= 54) return "open"; return "mid"; }
@@ -1886,7 +1983,7 @@ function classifyAll() {
     else if (loss < 20) k = "mistake";
     else k = "blunder";
     // Opening theory, approximated without a book: the first quiet, sound moves of a balanced game.
-    if (inBook && i < 12 && loss < 3 && Math.abs(e1.white) < 90 && !["brilliant", "great", "forced"].includes(k)) k = "book";
+    if (!S.sim && inBook && i < 12 && loss < 3 && Math.abs(e1.white) < 90 && !["brilliant", "great", "forced"].includes(k)) k = "book";
     else inBook = false;
     const prev = S.cls[i - 1];
     if ((k === "inaccuracy" || k === "mistake") && prev && ["mistake", "blunder"].includes(prev.k) && wb >= 60) k = "miss";
@@ -2117,7 +2214,7 @@ function renderSummary() {
   const tl = trainList();
   if (tl.length) t += `Separei <b>${tl.length} ${tl.length === 1 ? "desafio" : "desafios"}</b> para você refazer.`;
   $("sumText").innerHTML = t;
-  renderTimeCard();
+  renderTimeCard(); renderGoalsCard();
   setMascot($("sumMascot"), mood);
   const tb = $("trainBtn");
   tb.hidden = !tl.length;
@@ -2672,6 +2769,7 @@ const ACH = [
   { id: "perfect", name: "Treino perfeito", desc: "Ganhe 3 estrelas no treino", ico: "star" },
   { id: "replay", name: "Melhor que antes", desc: "No Rejogar, supere sua precisão da partida", ico: "great" },
   { id: "lvl5", name: "Veterano", desc: "Chegue ao nível 5", ico: "star" },
+  { id: "sim", name: "Diretor de cena", desc: "Cumpra todas as metas de uma partida simulada", ico: "star" },
   { id: "quiz10", name: "Olho de árbitro", desc: "Acerte a nota exata de 10 lances no Quiz", ico: "target" },
 ];
 function medal(ico) {
@@ -2870,6 +2968,365 @@ function endReplay() {
 }
 function exitReplay() { if (!S.replay) return; S.replay = null; if (rvBoard) rvBoard.setInteractive(null); updateScore(); }
 
+/* ================= Simulator: a game made to order ================= */
+// The bot weighs several engine candidates each turn, estimates the grade each one would get,
+// and steers its choices to hit the grades you asked for. Rare grades (brilliant, great) depend
+// on the position offering one, so the bot grabs every chance it gets.
+const SIM_CLS = ["brilliant", "great", "best", "excellent", "good", "inaccuracy", "mistake", "blunder"];
+const SIM_MPV = 6;
+const SIM = { cfg: Object.assign({ mode: "play", elo: 1200, opp: 1000, color: "w", targets: {} }, (() => { try { return JSON.parse(store.get("ra_sim")) || {}; } catch (_) { return {}; } })()), g: null, board: null };
+const simDepth = () => Math.min(12, Math.max(9, S.depth - 2));
+const eloTemp = (elo) => 28 * Math.exp(-(elo - 400) / 650);
+const eloSlip = (elo) => Math.max(0, (1300 - elo) / 3500);
+async function evalFull(fen, depth, mpv) {
+  const c = new Chess(fen), stm = c.turn();
+  if (c.game_over()) return evalPosition(fen, depth);
+  const r = await engine.analyze(fen, depth, mpv);
+  const lines = r.lines.map((l) => ({ cp: toCp(l), raw: { type: l.type, v: l.v }, pv: l.pv.slice(0, 10) }));
+  const top = lines[0] || { cp: 0, raw: { type: "cp", v: 0 }, pv: [r.best] };
+  return { white: stm === "w" ? top.cp : -top.cp, lines, best: r.best, stm, raw: top.raw };
+}
+const trimEv = (ev) => Object.assign({}, ev, { lines: (ev.lines || []).slice(0, 2) });
+function sacrificeLike(after, m, strict) { return offersMaterial(after, m, null, strict); }
+// Same thresholds the review uses, from the mover's winning chances before (wb) and after (wa).
+// With the next position's evaluation (e1) the sacrifice test is exactly the review's.
+function gradeMove(fen, ev, m, wb, wa, uci, e1) {
+  const loss = Math.max(0, wb - wa), legal = new Chess(fen).moves().length;
+  if (legal === 1) return { k: "forced", loss };
+  const isBest = uci === ev.best, sec = ev.lines[1], gap = sec ? winPct(ev.lines[0].cp) - winPct(sec.cp) : 0;
+  if (isBest || loss < 1) {
+    const after = new Chess(fen); after.move({ from: m.from, to: m.to, promotion: m.promotion });
+    const sac = e1 ? offersMaterial(after, m, e1.best, true) : offersMaterial(after, m, null, false);
+    if (sac && wa >= 50 && wb < 97 && loss < 2) return { k: "brilliant", loss };
+    if (isBest && sec && gap >= 15 && wb < 95 && wa > 35) return { k: "great", loss };
+    return { k: isBest ? "best" : "excellent", loss };
+  }
+  return { k: loss < 2 ? "excellent" : loss < 5 ? "good" : loss < 10 ? "inaccuracy" : loss < 20 ? "mistake" : "blunder", loss };
+}
+// The real grade of a candidate: evaluates the resulting position (cached and reused next turn).
+async function realGradeAt(fen, ev, uci, cache, prevK, depth) {
+  const after = new Chess(fen), m = after.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || "q" });
+  const f1 = after.fen(), e1 = cache[f1] || await evalFull(f1, depth || simDepth(), SIM_MPV); cache[f1] = e1;
+  let k = gradeMove(fen, ev, m, winFor(ev, m.color), winFor(e1, m.color), uci, e1).k;
+  if ((k === "inaccuracy" || k === "mistake") && ["mistake", "blunder"].includes(prevK) && winFor(ev, m.color) >= 60) k = "miss";
+  return { k, e1 };
+}
+const realGrade = (G, i, ev, uci) => realGradeAt(G.fens[i], ev, uci, G.cache, G.est[i - 1]);
+// Watch mode: the opponent steers into positions where the goal bot has a verified brilliant (or only-move) shot.
+// The opponent keeps the game tense: gives a little back when the goal bot is struggling, plays firmly when it runs away, avoids trades.
+function dramaPick(G, ev, fen) {
+  const cands = candidates(fen, ev); if (!cands.length) return null;
+  const botWinAfter = (c) => 100 - winPct(ev.lines.find((l) => l.pv[0] === c.uci).cp);
+  const trade = (c) => c.m.captured && PV[c.m.captured] >= 3 ? 8 : 0;
+  return cands.slice().sort((a, b) => Math.abs(botWinAfter(a) - 70) + trade(a) - Math.abs(botWinAfter(b) - 70) - trade(b))[0];
+}
+async function setupFor(G, i, ev, tok) {
+  const fen = G.fens[i], need = G.q.left.brilliant > 0 ? "brilliant" : "great", own = candidates(fen, ev), d = Math.max(8, simDepth() - 2);
+  // Quick scan without the engine: which replies leave the goal bot a sacrifice that checks or captures?
+  const ranked = [];
+  for (const om of new Chess(fen).moves({ verbose: true })) {
+    const after = new Chess(fen); after.move(om); if (after.game_over()) continue;
+    let tries = 0;
+    if (need === "brilliant") for (const bm of after.moves({ verbose: true })) {
+      if (!bm.captured && !bm.san.includes("+")) continue;
+      const a2 = new Chess(after.fen()); a2.move(bm);
+      if (offersMaterial(a2, bm, null, false)) tries++;
+    }
+    const u = om.from + om.to + (om.promotion || ""), top = own.findIndex((c) => c.uci === u);
+    if (tries || need === "great") ranked.push({ u, m: om, score: tries * 2 + (top >= 0 ? 6 - top : 0) });
+  }
+  ranked.sort((a, b) => b.score - a.score);
+  for (const { u, m } of ranked.slice(0, 6)) {
+    const after = new Chess(fen); after.move({ from: m.from, to: m.to, promotion: m.promotion });
+    const f1 = after.fen(), e1 = G.cache[f1] || await evalFull(f1, d, SIM_MPV); G.cache[f1] = e1;
+    if (SIM.g !== G || G.tok !== tok) return null;
+    const botWin = winFor(e1, G.botColor); if (botWin < 50 || botWin > 96) continue;
+    const shot = candidates(f1, e1).find((c) => c.k === need || c.k === "brilliant");
+    if (!shot) continue;
+    const r = await realGradeAt(f1, e1, shot.uci, G.cache, null, d);
+    if (SIM.g !== G || G.tok !== tok) return null;
+    if (r.k === need || r.k === "brilliant") {
+      G.plan = { fen: f1, uci: shot.uci, k: r.k };
+      return own.find((x) => x.uci === u) || Object.assign({ uci: u, m }, gradeMove(fen, ev, m, winPct(ev.lines[0].cp), winFor(e1, m.color), u, e1));
+    }
+  }
+  return null;
+}
+function candidates(fen, ev) {
+  const wb = winPct(ev.lines[0].cp);
+  return ev.lines.filter((l) => l.pv[0]).map((l) => { const m = moveObj(fen, l.pv[0]); return m ? Object.assign({ uci: l.pv[0], m }, gradeMove(fen, ev, m, wb, winPct(l.cp), l.pv[0])) : null; }).filter(Boolean);
+}
+async function probe(fen, ev, uci) {
+  const after = new Chess(fen), m = after.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || "q" }); if (!m) return null;
+  const e2 = await evalFull(after.fen(), 8, 1), me = m.color;
+  return Object.assign({ uci, m }, gradeMove(fen, ev, m, winPct(ev.lines[0].cp), winFor(e2, me), uci));
+}
+async function searchGrade(fen, ev, k, cands, tok) {
+  const seen = new Set(cands.map((c) => c.uci));
+  const pool = new Chess(fen).moves({ verbose: true }).map((m) => m.from + m.to + (m.promotion || "")).filter((u) => !seen.has(u)).sort(() => Math.random() - .5).slice(0, 8);
+  for (const u of pool) { const c = await probe(fen, ev, u); if (!SIM.g || SIM.g.tok !== tok) return null; if (c && c.k === k) return c; }
+  return null;
+}
+async function botChoose(fen, ev, elo, q, tok, prevK) {
+  const cands = candidates(fen, ev);
+  if (q) {
+    for (const k of ["brilliant", "great"]) if (q.left[k] > 0) { const c = cands.find((x) => x.k === k); if (c) return Object.assign(c, { want: k }); }
+    const wb = winPct(ev.lines[0].cp), missy = ["mistake", "blunder"].includes(prevK) && wb >= 60;
+    const due = q.slots.filter((s) => s.move <= q.moveNo && q.left[s.k] > 0 && !(missy && (s.k === "inaccuracy" || s.k === "mistake"))).sort((a, b) => a.move - b.move);
+    for (const s of due) {
+      let c = cands.find((x) => x.k === s.k);
+      if (!c && ["inaccuracy", "mistake", "blunder"].includes(s.k)) c = await searchGrade(fen, ev, s.k, cands, tok);
+      if (c) return Object.assign(c, { want: s.k });
+    }
+  }
+  if (q && (q.left.brilliant > 0 || q.left.great > 0)) {
+    // Keep the game undecided: a sacrifice only counts as brilliant while there is still something to win.
+    const ok = cands.filter((c) => c.loss < 4 && !["inaccuracy", "mistake", "blunder"].includes(c.k));
+    const wb = winPct(ev.lines[0].cp);
+    const trade = (c) => c.m.captured && PV[c.m.captured] >= 3 ? 6 : 0;
+    if (ok.length && (wb > 80 || ok.some((c) => trade(c)))) return ok.slice().sort((a, b) => Math.abs((wb - a.loss) - 72) + trade(a) - Math.abs((wb - b.loss) - 72) - trade(b))[0];
+  }
+  if (Math.random() < eloSlip(elo)) {
+    const all = new Chess(fen).moves({ verbose: true }), u = all[Math.floor(Math.random() * all.length)];
+    const c = await probe(fen, ev, u.from + u.to + (u.promotion || ""));
+    if (c && !(q && (q.target[c.k] || 0) > 0 && q.left[c.k] === 0)) return c;
+  }
+  // Skill model: lower Elo spreads its choices over worse candidates.
+  const T = eloTemp(elo), pool = q ? cands.filter((c) => !(["inaccuracy", "mistake", "blunder"].includes(c.k) && (q.target[c.k] || 0) > 0 && q.left[c.k] === 0 && cands.length > 1)) : cands;
+  const ws = pool.map((c) => Math.exp(-c.loss / T)), sum = ws.reduce((a, b) => a + b, 0);
+  let r = Math.random() * sum; for (let j = 0; j < pool.length; j++) { r -= ws[j]; if (r <= 0) return pool[j]; }
+  return pool[0];
+}
+function planSlots(targets) {
+  const slots = [];
+  ["best", "excellent", "good", "inaccuracy", "mistake", "blunder"].forEach((k) => { const n = targets[k] || 0; for (let j = 0; j < n; j++) slots.push({ k, move: Math.max(2, Math.round(3 + (j + .5) * (30 / n) + (Math.random() - .5) * 3)) }); });
+  return slots;
+}
+
+/* ---- Setup screen ---- */
+function renderSimSetup() {
+  const C = SIM.cfg;
+  document.querySelectorAll("#simMode button").forEach((b) => b.classList.toggle("on", b.dataset.v === C.mode));
+  document.querySelectorAll("#simColor button").forEach((b) => b.classList.toggle("on", b.dataset.v === C.color));
+  $("simElo").value = C.elo; $("eloVal").textContent = C.elo; $("simOpp").value = C.opp; $("oppVal").textContent = C.opp;
+  $("oppRow").hidden = C.mode !== "watch"; $("colorRow").hidden = C.mode !== "play";
+  $("eloLbl").textContent = C.mode === "watch" ? "Elo do bot com metas" : "Elo do bot";
+  $("simGoals").innerHTML = SIM_CLS.map((k) => `<div class="goal"><span class="gl">${ico(k)}${CLS[k].name}</span><span class="stepper"><button data-k="${k}" data-d="-1" aria-label="Menos">−</button><b class="num">${C.targets[k] || 0}</b><button data-k="${k}" data-d="1" aria-label="Mais">+</button></span></div>`).join("");
+  $("simGoals").querySelectorAll("button").forEach((b) => b.onclick = () => { const k = b.dataset.k; C.targets[k] = Math.max(0, Math.min(15, (C.targets[k] || 0) + +b.dataset.d)); saveSim(); Sound.select(); renderSimSetup(); });
+  const total = SIM_CLS.reduce((a, k) => a + (C.targets[k] || 0), 0);
+  $("simGo").textContent = total ? `Começar partida (${total} ${total === 1 ? "meta" : "metas"})` : "Começar partida sem metas";
+}
+function saveSim() { store.set("ra_sim", JSON.stringify(SIM.cfg)); }
+const SIM_PRESETS = {
+  genio: { brilliant: 6, great: 3 }, capivara: { blunder: 5, mistake: 3 }, limpa: { best: 12, excellent: 8 }, montanha: { brilliant: 2, blunder: 2, great: 2, mistake: 2 },
+};
+function wireSim() {
+  document.querySelectorAll("#simMode button").forEach((b) => b.onclick = () => { SIM.cfg.mode = b.dataset.v; saveSim(); Sound.select(); renderSimSetup(); });
+  document.querySelectorAll("#simColor button").forEach((b) => b.onclick = () => { SIM.cfg.color = b.dataset.v; saveSim(); Sound.select(); renderSimSetup(); });
+  $("simElo").oninput = () => { SIM.cfg.elo = +$("simElo").value; $("eloVal").textContent = SIM.cfg.elo; saveSim(); };
+  $("simOpp").oninput = () => { SIM.cfg.opp = +$("simOpp").value; $("oppVal").textContent = SIM.cfg.opp; saveSim(); };
+  document.querySelectorAll("#simPresets button").forEach((b) => b.onclick = () => { SIM.cfg.targets = Object.assign({}, SIM_PRESETS[b.dataset.p] || {}); saveSim(); Sound.ui(); renderSimSetup(); });
+  $("simOpen").onclick = () => { Sound.ui(); show("vSim"); setMascot($("simMascot"), "happy"); renderSimSetup(); };
+  $("simGo").onclick = () => { Sound.ui(); simStart(); };
+}
+
+/* ---- Playing ---- */
+function simSay(html, mood) {
+  const b = $("simBubble"); b.innerHTML = html; b.classList.remove("pop"); void b.offsetWidth; b.classList.add("pop");
+  b.querySelectorAll(".pref").forEach((p) => p.onclick = () => { Sound.select(); SIM.board.pulse([p.dataset.from, p.dataset.to], "#fff"); });
+  if (mood) setMascot($("simPlayMascot"), mood);
+}
+function simNames(G) {
+  const bot = `Bot ${G.elo}`, opp = G.mode === "play" ? "Você" : `Bot ${G.opp}`;
+  return G.botColor === "w" ? { w: bot, b: opp } : { w: opp, b: bot };
+}
+function simStrips() {
+  const G = SIM.g, N = simNames(G);
+  const strip = (c) => `<span class="avatar"><img src="${PIECES[c + "k"]}" alt=""></span><span class="nm">${esc(N[c])}</span>${c === G.botColor ? '<span class="you" style="background:#5c8bb0;color:#fff">METAS</span>' : G.mode === "play" ? '<span class="you">VOCÊ</span>' : ""}<span class="grow"></span><span class="clock num ${G.ch.turn() === c && !G.over ? "on" : ""}">${c === G.ch.turn() && !G.over ? "na vez" : "·"}</span>`;
+  const flip = SIM.board.flipped, top = flip ? "w" : "b", bot = flip ? "b" : "w";
+  $("sTop").innerHTML = strip(top); $("sBot").innerHTML = strip(bot);
+}
+function simProgress() {
+  const G = SIM.g, T = G.targets, ks = SIM_CLS.filter((k) => T[k] > 0);
+  const done = {}; G.est.forEach((k, i) => { if (k && G.plies[i].color === G.botColor) done[k] = (done[k] || 0) + 1; });
+  $("simProg").innerHTML = ks.length ? ks.map((k) => { const d = done[k] || 0, ok = d >= T[k]; return `<span class="gp ${ok ? "ok" : ""}">${ico(k)}<b class="num">${d}/${T[k]}</b></span>`; }).join("") : '<span class="muted small">Sem metas: o bot joga no nível escolhido.</span>';
+}
+function simEvalBar(ev) {
+  if (!ev) return;
+  $("sEvalbar").classList.toggle("flip", SIM.board.flipped);
+  $("sEvalW").style.transform = `scaleY(${whiteWin(ev) / 100})`;
+}
+async function simStart() {
+  const C = SIM.cfg, mode = C.mode;
+  const userColor = mode === "play" ? (C.color === "r" ? (Math.random() < .5 ? "w" : "b") : C.color) : null;
+  const botColor = mode === "play" ? (userColor === "w" ? "b" : "w") : "w";
+  const targets = Object.assign({}, C.targets);
+  const left = {}; SIM_CLS.forEach((k) => left[k] = targets[k] || 0);
+  const ch = new Chess();
+  SIM.g = { mode, elo: C.elo, opp: C.opp, userColor, botColor, targets, ch, plies: [], fens: [ch.fen()], evals: [], est: [], evalP: {}, cache: {}, plan: null, over: false, fast: false, paused: false, tok: Math.random(),
+    q: { target: targets, left, slots: planSlots(targets), moveNo: 0 } };
+  show("vSimPlay");
+  if (!SIM.board) SIM.board = new Board($("simBoard"));
+  SIM.board.setFlip(mode === "play" ? userColor === "b" : false);
+  SIM.board.render(ch.fen(), {});
+  simStrips(); simProgress(); $("sEvalW").style.transform = "scaleY(.5)";
+  simSay(`<div class="head">Simulador</div><p class="say">Preparando o bot…</p>`, "neutral");
+  try { if (!engine) engine = new Engine(); await engine.ready; }
+  catch (_) { simSay(`<div class="head">Simulador</div><p class="say">Não consegui carregar o Stockfish. Confira sua internet e tente de novo.</p>`, "worried"); engine = null; return; }
+  Sound.intro();
+  simLoop();
+}
+function simGradePrev(i) {
+  // Grade the move that led to position i once both evaluations exist.
+  const G = SIM.g, j = i - 1; if (j < 0 || G.est[j] || !G.evals[j] || !G.evals[i]) return null;
+  const m = G.plies[j]; let k = gradeMove(G.fens[j], G.evals[j], m, winFor(G.evals[j], m.color), winFor(G.evals[i], m.color), m.from + m.to + (m.promotion || ""), G.evals[i]).k;
+  if ((k === "inaccuracy" || k === "mistake") && ["mistake", "blunder"].includes(G.est[j - 1]) && winFor(G.evals[j], m.color) >= 60) k = "miss";
+  G.est[j] = k; return k;
+}
+async function simLoop() {
+  const G = SIM.g, tok = G.tok;
+  while (!G.over && SIM.g === G && G.tok === tok) {
+    if (G.paused) return;
+    const i = G.plies.length, turn = G.ch.turn();
+    if (G.ch.game_over() || i >= 240) return simEnd();
+    const isBot = G.mode === "watch" || turn === G.botColor;
+    if (!isBot) return simUserTurn();
+    const thinking = G.mode === "play" || !G.fast;
+    if (thinking) simSay(`<div class="head">${G.mode === "play" ? "Bot" : "Bot " + (turn === G.botColor ? G.elo : G.opp)} · lance ${Math.floor(i / 2) + 1}</div><p class="say"><span class="dots">Pensando</span></p>`, null);
+    if (G.evalP[i]) await G.evalP[i];
+    const nLegal = G.ch.moves().length, cached = G.evals[i] || G.cache[G.fens[i]];
+    const ev = cached && cached.lines.length >= Math.min(SIM_MPV, nLegal) ? cached : await evalFull(G.fens[i], simDepth(), SIM_MPV);
+    if (SIM.g !== G || G.tok !== tok) return;
+    G.evals[i] = ev; simEvalBar(ev);
+    // In play mode, the user's last move gets its grade now.
+    const prevK = simGradePrev(i);
+    if (G.mode === "play" && prevK && i > 0) {
+      const m = G.plies[i - 1]; SIM.board.badge(m.to, prevK, 0);
+      const ms = Celebrate.play(prevK, m.to, SIM.board, null, m);
+      simSay(`<div class="head">${ico(prevK)}Seu lance<span class="tag" style="color:${CLS[prevK].color}">${CLS[prevK].name}</span></div><p class="say">${moveRef(m)} ${ico(prevK)}</p><p class="say small"><span class="dots">O bot está pensando</span></p>`, MOOD[prevK]);
+      await sleep(Math.min(ms, 1400) + 300);
+      if (SIM.g !== G || G.tok !== tok) return;
+    }
+    const isQ = turn === G.botColor, q = isQ ? G.q : null;
+    if (q) q.moveNo++;
+    let pick = null;
+    if (!isQ && G.mode === "watch" && (G.q.left.brilliant > 0 || G.q.left.great > 0)) {
+      if (!G.fast) simSay(`<div class="head">Bot ${G.opp} · lance ${Math.floor(i / 2) + 1}</div><p class="say"><span class="dots">Armando o cenário</span></p>`, null);
+      pick = await setupFor(G, i, ev, tok);
+    }
+    if (!pick && isQ && G.plan && G.plan.fen === G.fens[i]) { const m = moveObj(G.fens[i], G.plan.uci); if (m) pick = { uci: G.plan.uci, m, k: G.plan.k, want: G.plan.k }; G.plan = null; }
+    if (!pick && !isQ && G.mode === "watch" && (G.q.left.brilliant > 0 || G.q.left.great > 0)) pick = dramaPick(G, ev, G.fens[i]);
+    if (!pick) pick = await botChoose(G.fens[i], ev, isQ ? G.elo : G.opp, q, tok, G.est[i - 1]);
+    if (SIM.g !== G || G.tok !== tok || !pick) return;
+    let rg = await realGrade(G, i, ev, pick.uci);
+    if (q && pick.want && rg.k !== pick.want) {
+      for (const alt of candidates(G.fens[i], ev).filter((c) => c.k === pick.want && c.uci !== pick.uci).slice(0, 3)) {
+        const r2 = await realGrade(G, i, ev, alt.uci); if (r2.k === pick.want) { pick = alt; rg = r2; break; }
+      }
+    }
+    if (SIM.g !== G || G.tok !== tok) return;
+    pick.k = rg.k;
+    if (q && q.left[pick.k] > 0) q.left[pick.k]--;
+    simApply(pick.uci, pick.k);
+    G.evals[i + 1] = rg.e1;
+    const k = pick.k, m = G.plies[G.plies.length - 1];
+    let wait = G.mode === "play" ? 250 : G.fast ? 0 : 750;
+    if (!G.fast) { const ms = Celebrate.play(k, m.to, SIM.board, null, m); if (G.mode === "watch") wait = Math.max(wait, Math.min(ms, ["brilliant", "great", "blunder"].includes(k) ? ms : 1100)); }
+    if (G.mode === "watch") simWatchSay(m, k);
+    if (wait) await sleep(wait); else await sleep(0);
+  }
+}
+function simApply(uci, k) {
+  const G = SIM.g, m = G.ch.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || "q" });
+  G.plies.push(m); G.fens.push(G.ch.fen()); G.est.push(k || null);
+  const o = Object.assign(G.fast ? {} : animFor(m, false), { hl: [m.from, m.to] });
+  if (k) o.badge = { sq: m.to, k };
+  SIM.board.render(G.ch.fen(), o);
+  if (!G.fast) { moveSound(m); SIM.board.landFx(m); }
+  simStrips(); simProgress();
+}
+function simWatchSay(m, k) {
+  const G = SIM.g, N = simNames(G);
+  simSay(`<div class="head">${ico(k)}Lance ${Math.ceil(G.plies.length / 2)} · ${esc(N[m.color])}<span class="tag" style="color:${CLS[k].color}">${CLS[k].name}</span></div>
+    <p class="say">${moveRef(m)}</p>
+    <div class="actions"><button class="pill" id="simPause">${G.paused ? "Continuar" : "Pausar"}</button><button class="pill ${G.fast ? "on" : ""}" id="simFast">${G.fast ? "Rápido ligado" : "Modo rápido"}</button><button class="pill go" id="simStop">Encerrar e revisar</button></div>`, MOOD[k]);
+  $("simPause").onclick = () => { Sound.ui(); G.paused = !G.paused; if (!G.paused) simLoop(); simWatchSay(m, k); };
+  $("simFast").onclick = () => { Sound.ui(); G.fast = !G.fast; Stage.clear(); simWatchSay(m, k); };
+  $("simStop").onclick = () => { Sound.ui(); simEnd(true); };
+}
+function simUserTurn() {
+  const G = SIM.g, i = G.plies.length, fen = G.fens[i];
+  if (!G.evals[i] && G.cache[fen]) G.evals[i] = G.cache[fen];
+  if (!G.evals[i] && !G.evalP[i]) G.evalP[i] = evalFull(fen, simDepth(), 2).then((ev) => { if (SIM.g === G && !G.evals[i]) { G.evals[i] = ev; simEvalBar(ev); } });
+  SIM.board.setInteractive(G.userColor, onSimUserMove);
+  simSay(`<div class="head">Sua vez · lance ${Math.floor(i / 2) + 1}</div><p class="say">Toque na peça e depois na casa, ou arraste.</p>
+    <div class="actions"><button class="pill" id="simHint">Dica</button>${i >= 2 ? '<button class="pill" id="simUndo">Desfazer</button>' : ""}<button class="pill" id="simResign">Encerrar e revisar</button></div>`, null);
+  $("simHint").onclick = async () => {
+    Sound.ui(); if (G.evalP[i]) await G.evalP[i];
+    const ev = G.evals[i]; if (!ev || !ev.best || SIM.g !== G || G.plies.length !== i) return;
+    SIM.board.topLayer.querySelectorAll("svg.arrows").forEach((a) => a.remove());
+    SIM.board.arrow(ev.best.slice(0, 2), ev.best.slice(2, 4), "#5c8bb0"); SIM.board.pulse([ev.best.slice(0, 2)], "#9cc7ec");
+  };
+  const u = $("simUndo"); if (u) u.onclick = () => { Sound.ui(); simUndo(); };
+  $("simResign").onclick = () => { Sound.ui(); simEnd(true); };
+}
+function onSimUserMove(uci) {
+  const G = SIM.g; SIM.board.setInteractive(null);
+  simApply(uci, null);
+  simLoop();
+}
+function simUndo() {
+  const G = SIM.g; if (G.plies.length < 2 || G.ch.turn() !== G.userColor) return;
+  G.tok = Math.random();
+  for (let n = 0; n < 2; n++) {
+    const j = G.plies.length - 1, m = G.plies.pop(); G.ch.undo(); G.fens.pop();
+    const k = G.est.pop(); delete G.evals[j + 1]; delete G.evalP[j + 1];
+    if (m.color === G.botColor) { G.q.moveNo = Math.max(0, G.q.moveNo - 1); if (k && G.targets[k] > 0) G.q.left[k] = Math.min(G.targets[k], G.q.left[k] + 1); }
+  }
+  G.evals.length = G.plies.length + 1; G.est.length = G.plies.length;
+  SIM.board.render(G.ch.fen(), G.plies.length ? { hl: [G.plies[G.plies.length - 1].from, G.plies[G.plies.length - 1].to] } : {});
+  Sound.move(); simStrips(); simProgress(); simUserTurn();
+}
+async function simEnd(early) {
+  const G = SIM.g; if (!G || G.over) return;
+  G.over = true; G.tok = Math.random(); SIM.board.setInteractive(null);
+  const n = G.plies.length;
+  simSay(`<div class="head">Fim de jogo</div><p class="say"><span class="dots">Preparando a revisão</span></p>`, "neutral");
+  for (let i = 0; i <= n; i++) if (!G.evals[i]) { if (G.evalP[i]) await G.evalP[i]; if (!G.evals[i]) G.evals[i] = await evalFull(G.fens[i], simDepth(), 2); }
+  const ch = G.ch, N = simNames(G);
+  let result = "*", txt = early ? "Partida encerrada." : "Limite de lances atingido.";
+  if (ch.in_checkmate()) { result = ch.turn() === "w" ? "0-1" : "1-0"; txt = `Xeque-mate! ${esc(N[ch.turn() === "w" ? "b" : "w"])} vence.`; }
+  else if (ch.in_draw() || ch.in_stalemate() || ch.in_threefold_repetition()) { result = "1/2-1/2"; txt = "Empate."; }
+  G.result = result;
+  if (result !== "*") Sound.mate(); else Sound.intro();
+  if (result === "1-0" || result === "0-1") SIM.board.confetti();
+  simStrips();
+  simSay(`<div class="head">Fim de jogo<span class="tag">${result.replace("1/2-1/2", "½-½")}</span></div><p class="say">${txt} ${n} lances no total.</p>
+    <div class="actions"><button class="pill go" id="simReview">Revisar a partida</button><button class="pill" id="simAgain">Nova partida</button></div>`, result === "*" ? "neutral" : "star");
+  $("simReview").onclick = () => { Sound.ui(); simReview(); };
+  $("simAgain").onclick = () => { Sound.ui(); show("vSim"); renderSimSetup(); };
+}
+function simReview() {
+  const G = SIM.g, N = simNames(G);
+  const headers = { Event: "Simulador", White: N.w, Black: N.b, WhiteElo: G.botColor === "w" ? String(G.elo) : G.mode === "play" ? "?" : String(G.opp), BlackElo: G.botColor === "b" ? String(G.elo) : G.mode === "play" ? "?" : String(G.opp), Result: G.result || "*" };
+  const moves = G.plies.map((m, i) => (i % 2 ? "" : Math.floor(i / 2) + 1 + ". ") + m.san).join(" ");
+  const pgn = Object.entries(headers).map(([k, v]) => `[${k} "${v}"]`).join("\n") + "\n\n" + moves + " " + headers.Result + `\n{${G.tok}}`;
+  Object.assign(S, { headers, plies: G.plies.slice(), fens: G.fens.slice(), evals: G.evals.slice(0, G.fens.length).map(trimEv), cls: [], idx: 0, user: "", myColor: G.mode === "play" ? G.userColor : null, mode: "review", retry: null, replay: null, gameKey: pgnKey(pgn + Math.random()), awarded: false, lastW: null, clks: null, quizRes: null, explore: null, sim: { botColor: G.botColor, targets: G.targets, botName: N[G.botColor] } });
+  finishAnalysis(false);
+}
+function renderGoalsCard() {
+  const card = $("goalsCard"); if (!S.sim) { card.hidden = true; return; }
+  const T = S.sim.targets, ks = SIM_CLS.filter((k) => T[k] > 0);
+  if (!ks.length) { card.hidden = true; return; }
+  const done = {}; S.cls.forEach((c, i) => { if (S.plies[i].color === S.sim.botColor) done[c.k] = (done[c.k] || 0) + 1; });
+  const met = ks.filter((k) => (done[k] || 0) >= T[k]).length;
+  card.hidden = false;
+  $("goalsTitle").textContent = `Metas do ${S.sim.botName} · ${met} de ${ks.length} cumpridas`;
+  $("goalsList").innerHTML = ks.map((k, j) => { const d = done[k] || 0, ok = d >= T[k], pct = Math.min(1, d / T[k]); return `<div class="goalrow ${ok ? "ok" : ""}" style="animation-delay:${j * 50}ms"><span class="gl">${ico(k)}${CLS[k].name}</span><span class="gbar"><span style="transform:scaleX(${pct})"></span></span><b class="num">${d}/${T[k]}</b></div>`; }).join("")
+    + (ks.some((k) => (k === "brilliant" || k === "great") && (done[k] || 0) < T[k]) ? '<p class="muted small" style="margin:8px 0 0">Brilhantes e ótimos só aparecem quando a posição permite. O bot aproveitou todas as chances que encontrou; tente de novo no modo assistir para mais cenários.</p>' : "");
+  if (met === ks.length) Prog.unlock("sim");
+}
+
 /* ================= Settings sheet ================= */
 function openSettings() {
   Sound.ui();
@@ -2932,6 +3389,7 @@ $("pgnBtn").onclick = () => { Sound.ensure(); const p = $("pgnInput").value.trim
 const savedUser = store.get("ra_user"); if (savedUser) $("username").value = savedUser;
 paintLevel();
 $("quizBtn").onclick = toggleQuiz; paintQuizBtn();
+wireSim();
 show("vHome");
 </script>
 </body>
