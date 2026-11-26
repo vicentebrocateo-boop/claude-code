@@ -309,6 +309,63 @@ canvas.fx { position: absolute; inset: -20%; width: 140%; height: 140%; pointer-
 /* ---------- Training result ---------- */
 .stars { display: flex; gap: 8px; justify-content: center; }
 .stars svg { width: 52px; height: 52px; animation: pop .5s cubic-bezier(.2,1.7,.4,1) both; }
+/* ---------- Celebrations (full-screen stage) ---------- */
+.stage { position: fixed; inset: 0; z-index: 50; pointer-events: none; overflow: hidden; }
+.stage.skippable { pointer-events: auto; cursor: pointer; }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.st-el { position: absolute; pointer-events: none; }
+.st-out { animation: stOut .45s ease forwards !important; }
+@keyframes stOut { to { opacity: 0; } }
+.st-vig { inset: 0; animation: stFadeIn .35s ease both; }
+@keyframes stFadeIn { from { opacity: 0; } }
+.st-vig.pulse { animation: stVigPulse 1.6s ease-out both; }
+@keyframes stVigPulse { 0% { opacity: 0; } 15% { opacity: 1; } 35% { opacity: .55; } 55% { opacity: .9; } 100% { opacity: 0; } }
+.st-flash { inset: 0; background: #fff; animation: stFlash .55s ease-out forwards; }
+@keyframes stFlash { from { opacity: .95; } to { opacity: 0; } }
+.st-rays { border-radius: 50%; background: repeating-conic-gradient(from 0deg, var(--c) 0deg 9deg, transparent 9deg 24deg); -webkit-mask: radial-gradient(circle, #000 18%, transparent 68%); mask: radial-gradient(circle, #000 18%, transparent 68%); animation: stSpin 5s linear infinite, stGrow .55s cubic-bezier(.2,1.4,.4,1) both; }
+.st-rays.rev { animation: stSpinR 7s linear infinite, stGrow .55s cubic-bezier(.2,1.4,.4,1) both; }
+@keyframes stSpin { to { rotate: 360deg; } }
+@keyframes stSpinR { to { rotate: -360deg; } }
+@keyframes stGrow { from { transform: scale(0); opacity: 0; } }
+.st-halo { border-radius: 50%; background: radial-gradient(circle, var(--c) 0%, transparent 65%); animation: stGrow .5s ease-out both, stBreathe 1.2s ease-in-out .5s infinite alternate; }
+@keyframes stBreathe { to { transform: scale(1.12); } }
+.st-stamp { animation: stSlam .6s cubic-bezier(.2,1.6,.35,1) both; filter: drop-shadow(0 10px 18px rgba(0,0,0,.55)); }
+.st-stamp svg { width: 100%; height: 100%; display: block; }
+@keyframes stSlam { 0% { transform: scale(4.5) rotate(-35deg); opacity: 0; } 55% { opacity: 1; } 100% { transform: none; } }
+.st-stamp.wobble { animation: stSlam .6s cubic-bezier(.2,1.6,.35,1) both, stWob 1.4s ease-in-out .6s infinite; }
+@keyframes stWob { 25% { rotate: -6deg; } 75% { rotate: 6deg; } }
+.st-stamp.heavy { animation: stHeavy .9s cubic-bezier(.3,0,.3,1) both; }
+@keyframes stHeavy { 0% { transform: translateY(-140%) rotate(-12deg); opacity: 0; } 45% { transform: translateY(0) rotate(4deg) scale(1.15, .85); opacity: 1; } 60% { transform: translateY(-12%) rotate(-3deg); } 75% { transform: translateY(0) scale(1.05, .95); } 100% { transform: translateY(0) rotate(8deg); } }
+.st-text { transform: translate(-50%, -50%); white-space: nowrap; font-family: var(--f-display); font-weight: 800; letter-spacing: .02em; line-height: 1; }
+.st-text span { display: inline-block; animation: stLetter .55s cubic-bezier(.2,1.8,.4,1) both; color: #fff; -webkit-text-stroke: .055em var(--dk); paint-order: stroke fill; text-shadow: 0 .07em 0 var(--dk), 0 0 .5em var(--c); }
+@keyframes stLetter { 0% { transform: translateY(-140%) scale(.2) rotate(-25deg); opacity: 0; } 100% { transform: none; opacity: 1; } }
+.st-text.wave span { animation: stLetter .55s cubic-bezier(.2,1.8,.4,1) both, stWave 1s ease-in-out infinite; }
+@keyframes stWave { 50% { translate: 0 -12%; } }
+.st-text.shimmer span { background: linear-gradient(100deg, #fff 20%, #7ff5e0 35%, #fff 50%, #ffe27a 65%, #fff 80%); background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: stLetter .55s cubic-bezier(.2,1.8,.4,1) both, stShimmer 1.4s linear infinite; text-shadow: none; filter: drop-shadow(0 .06em 0 var(--dk)) drop-shadow(0 0 .35em var(--c)); }
+@keyframes stShimmer { to { background-position: -300% 0; } }
+.st-text.sag span { animation: stDropLetter .6s cubic-bezier(.3,1.5,.5,1) both, stSag 2s ease-in .8s forwards; }
+@keyframes stDropLetter { 0% { transform: translateY(-300%); opacity: 0; } 100% { transform: none; opacity: 1; } }
+@keyframes stSag { to { translate: 0 18%; rotate: 8deg; } }
+.st-float { display: grid; place-items: center; }
+.st-float svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 4px 8px rgba(0,0,0,.45)); }
+.fl-up { animation: flUp 1.05s cubic-bezier(.2,.9,.3,1) forwards; }
+@keyframes flUp { 0% { transform: scale(.2); opacity: 0; } 22% { transform: translateY(-40%) scale(1.35) rotate(-12deg); opacity: 1; } 45% { transform: translateY(-70%) scale(1.1) rotate(8deg); } 100% { transform: translateY(-190%) scale(.9) rotate(0); opacity: 0; } }
+.fl-drop { animation: flDrop 1.1s ease forwards; }
+@keyframes flDrop { 0% { transform: translateY(-220%) scale(.8); opacity: 0; } 35% { transform: translateY(0) scale(1.2, .8); opacity: 1; } 50% { transform: translateY(-35%) scale(.95, 1.05); } 65% { transform: translateY(0) scale(1.08, .92); } 80% { transform: translateY(-8%); opacity: 1; } 100% { transform: translateY(0); opacity: 0; } }
+.fl-wob { animation: flWob 1.15s ease forwards; }
+@keyframes flWob { 0% { transform: scale(0); opacity: 0; } 20% { transform: scale(1.25) rotate(-18deg); opacity: 1; } 35% { transform: rotate(16deg); } 50% { transform: rotate(-12deg); } 65% { transform: rotate(8deg); opacity: 1; } 100% { transform: translateY(-60%) rotate(0); opacity: 0; } }
+.fl-flip { animation: flFlip 1s ease forwards; perspective: 400px; }
+@keyframes flFlip { 0% { transform: rotateY(90deg) scale(.4); opacity: 0; } 30% { transform: rotateY(0) scale(1.2); opacity: 1; } 60% { transform: rotateY(-25deg) scale(1.05); } 100% { transform: translateY(-80%) rotateY(0) scale(.9); opacity: 0; } }
+.fl-dash { animation: flDash .9s ease forwards; }
+@keyframes flDash { 0% { transform: translateX(-120%) scale(.6); opacity: 0; } 35% { transform: translateX(0) scale(1.15); opacity: 1; } 70% { transform: translateX(15%) scale(1); opacity: 1; } 100% { transform: translateX(110%) scale(.7); opacity: 0; } }
+.st-draw path, .st-draw line, .st-draw polyline { stroke-dasharray: 1; stroke-dashoffset: 1; animation: stDraw var(--d, .35s) ease-out var(--dl, 0s) forwards; }
+@keyframes stDraw { to { stroke-dashoffset: 0; } }
+.st-draw.fade { animation: stOut .4s ease var(--fo, .8s) forwards; }
+.boardwrap.zoomin { transition: transform .75s cubic-bezier(.5,0,.2,1); transform: scale(1.14); z-index: 4; }
+.boardwrap.punch { animation: punch .45s cubic-bezier(.2,1.6,.4,1); }
+@keyframes punch { 30% { transform: scale(1.045); } }
+.quake { animation: quake .7s cubic-bezier(.36,.07,.19,.97); }
+@keyframes quake { 10% { transform: translate(-10px, 6px) rotate(-1deg); } 20% { transform: translate(12px, -8px) rotate(1deg); } 30% { transform: translate(-12px, 4px); } 40% { transform: translate(10px, 8px) rotate(.8deg); } 55% { transform: translate(-7px, -5px); } 70% { transform: translate(5px, 3px); } 85% { transform: translate(-2px, 0); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
 </style>
 </head>
@@ -598,13 +655,16 @@ const Sound = {
     o.connect(v); this.bus(v, wet); o.start(t); o.stop(t + dur + .05);
   },
   bell(f, dur, g, at = 0) { this.tone(f, dur, { g, at }); this.tone(f * 2.01, dur * .6, { g: g * .35, at }); this.tone(f * 3.02, dur * .35, { g: g * .15, at }); },
-  noise(dur, { at = 0, g = .5, f = 1500, q = 1.5, type = "bandpass", wet = false, to = null } = {}) {
+  noise(dur, { at = 0, g = .5, f = 1500, q = 1.5, type = "bandpass", wet = false, to = null, env = "decay" } = {}) {
     if (!CFG.sound) return; const c = this.ensure(); if (!c) return;
     const t = c.currentTime + at, len = Math.max(1, Math.floor(c.sampleRate * dur)), buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
-    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 4);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (env === "decay" ? Math.pow(1 - i / len, 4) : 1);
     const s = c.createBufferSource(); s.buffer = buf;
     const fl = c.createBiquadFilter(); fl.type = type; fl.frequency.setValueAtTime(f, t); if (to) fl.frequency.exponentialRampToValueAtTime(to, t + dur); fl.Q.value = q;
-    const v = c.createGain(); v.gain.value = g; s.connect(fl); fl.connect(v); this.bus(v, wet); s.start(t);
+    const v = c.createGain(); v.gain.value = g;
+    if (env === "rise") { v.gain.setValueAtTime(0, t); v.gain.linearRampToValueAtTime(g, t + dur * .9); v.gain.linearRampToValueAtTime(0, t + dur); }
+    else if (env === "fade") { v.gain.setValueAtTime(g, t); v.gain.exponentialRampToValueAtTime(.001, t + dur); }
+    s.connect(fl); fl.connect(v); this.bus(v, wet); s.start(t);
   },
   // Wooden piece on a wooden board: two body resonances plus a low thump.
   wood(at = 0, hard = 1) {
@@ -653,6 +713,24 @@ const Sound = {
   wrong() { this.tone(180, .32, { type: "square", g: .06, wet: false }); this.tone(170, .32, { type: "square", g: .06, wet: false, detune: 30 }); },
   intro() { [523, 659, 784, 1047].forEach((f, i) => this.bell(f, .6, .08, i * .07)); },
   star(i) { this.bell(1047 * Math.pow(1.26, i), .6, .1); },
+  riser(dur) { this.noise(dur, { g: .35, f: 300, to: 7000, q: 1.2, wet: true, env: "rise" }); this.tone(220, dur, { type: "sawtooth", g: .05, to: 1760, attack: dur * .9 }); this.tone(110, dur, { type: "triangle", g: .12, to: 880, attack: dur * .9 }); },
+  boom(at = 0) { this.tone(110, 1.1, { g: .9, at, to: 28, wet: false }); this.noise(.5, { at, g: .9, f: 380, q: .7, type: "lowpass", env: "fade" }); this.noise(.12, { at, g: .5, f: 2500, q: .5, type: "highpass" }); },
+  pad(freqs, dur, g = .05) {
+    if (!CFG.sound) return; const c = this.ensure(); if (!c) return;
+    const t = c.currentTime;
+    freqs.forEach((f) => [-9, 9].forEach((dt) => {
+      const o = c.createOscillator(), lp = c.createBiquadFilter(), v = c.createGain();
+      o.type = "sawtooth"; o.frequency.value = f; o.detune.value = dt; lp.type = "lowpass"; lp.frequency.setValueAtTime(800, t); lp.frequency.linearRampToValueAtTime(3200, t + .4);
+      v.gain.setValueAtTime(0, t); v.gain.linearRampToValueAtTime(g, t + .08); v.gain.setValueAtTime(g, t + dur * .55); v.gain.exponentialRampToValueAtTime(.0001, t + dur);
+      o.connect(lp); lp.connect(v); this.bus(v); o.start(t); o.stop(t + dur + .05);
+    }));
+  },
+  chord(freqs, g = .1) { freqs.forEach((f, i) => this.bell(f, 1.1, g, i * .045)); this.pad(freqs.slice(0, 3), 1.2, .025); },
+  sparkle(n, at = 0) { for (let i = 0; i < n; i++) this.bell(1800 + Math.random() * 2600, .3, .035, at + i * .06 + Math.random() * .04); },
+  pop() { this.noise(.06, { g: .8, f: 1500, q: .6, type: "highpass" }); this.tone(180, .15, { g: .3, to: 60, wet: false }); for (let i = 0; i < 9; i++) this.noise(.012, { at: .08 + Math.random() * .45, g: .25, f: 4000 + Math.random() * 3000, q: 2 }); },
+  pageFlip() { this.noise(.18, { g: .45, f: 3200, to: 700, q: 1.2 }); this.noise(.12, { at: .12, g: .3, f: 2400, to: 600, q: 1.2 }); },
+  thud() { this.tone(130, .3, { g: .55, to: 45, wet: false }); this.noise(.1, { g: .6, f: 300, q: .8, type: "lowpass" }); },
+  glass() { this.noise(.05, { g: .9, f: 5000, q: .7, type: "highpass" }); for (let i = 0; i < 12; i++) this.noise(.02 + Math.random() * .03, { at: .02 + Math.random() * .35, g: .35, f: 3000 + Math.random() * 5000, q: 3, wet: true }); },
 };
 
 /* ================= Particles ================= */
@@ -839,6 +917,250 @@ class Board {
   }
 }
 
+/* ================= Celebrations ================= */
+// Full-screen stage over the page: its own particle canvas plus DOM sprites (stamps, rays, big letters).
+const Stage = {
+  init() {
+    this.el = document.createElement("div"); this.el.className = "stage"; this.el.setAttribute("aria-hidden", "true");
+    this.cv = document.createElement("canvas"); this.el.appendChild(this.cv); document.body.appendChild(this.el);
+    this.g = this.cv.getContext("2d"); this.ps = []; this.fx = []; this.timers = []; this.running = false;
+    this.el.addEventListener("pointerdown", () => { if (this.el.classList.contains("skippable")) this.clear(); });
+  },
+  size() {
+    const dpr = this.dpr = Math.min(2, devicePixelRatio || 1);
+    if (this.cv.width !== Math.round(innerWidth * dpr) || this.cv.height !== Math.round(innerHeight * dpr)) { this.cv.width = Math.round(innerWidth * dpr); this.cv.height = Math.round(innerHeight * dpr); }
+  },
+  later(ms, f) { this.timers.push(setTimeout(f, ms)); },
+  clear() {
+    this.timers.forEach(clearTimeout); this.timers = [];
+    this.el.querySelectorAll(".st-el").forEach((e) => e.remove());
+    this.ps = []; this.fx = []; this.el.classList.remove("skippable");
+    document.querySelectorAll(".zoomin, .quake, .punch").forEach((e) => e.classList.remove("zoomin", "quake", "punch"));
+  },
+  add(cls, css, html = "") { const d = document.createElement("div"); d.className = "st-el " + cls; for (const k in css) d.style.setProperty(k, typeof css[k] === "number" ? css[k] + "px" : css[k]); d.innerHTML = html; this.el.appendChild(d); return d; },
+  fadeAll(ms) { this.later(ms, () => this.el.querySelectorAll(".st-el").forEach((d) => d.classList.add("st-out"))); this.later(ms + 460, () => { this.el.querySelectorAll(".st-el").forEach((d) => d.remove()); this.el.classList.remove("skippable"); }); },
+  text(str, x, y, size, cls, c, dk, step = 45, delay = 0) {
+    const html = [...str].map((ch, i) => `<span style="animation-delay:${delay + i * step}ms${cls.includes("wave") ? `,${delay + 600 + i * 70}ms` : cls.includes("shimmer") ? `,${delay}ms` : cls.includes("sag") ? `,${delay + 700 + i * 40}ms` : ""}">${ch === " " ? "&nbsp;" : esc(ch)}</span>`).join("");
+    return this.add("st-text " + cls, { left: x, top: y, "font-size": size, "--c": c, "--dk": dk }, html);
+  },
+  spawn(p) { this.ps.push(Object.assign({ vx: 0, vy: 0, g: .15, drag: .97, life: 1, decay: .015, size: 4, rot: Math.random() * 6, vr: (Math.random() - .5) * .3, kind: "dot", color: "#fff" }, p)); this.run(); },
+  burst(x, y, { n = 40, colors = ["#fff"], kind = "dot", speed = 8, g = .15, size = 4, decay = .014, spread = Math.PI * 2, angle = 0, drag = .96 } = {}) {
+    for (let i = 0; i < n; i++) {
+      const a = angle + (Math.random() - .5) * spread, s = speed * (.3 + Math.random() * .9);
+      this.spawn({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, g, kind, drag, size: size * (.6 + Math.random() * .8), decay: decay * (.7 + Math.random() * .6), color: colors[i % colors.length] });
+    }
+  },
+  implode(x, y, r, n, color) {
+    for (let i = 0; i < n; i++) { const a = Math.random() * 7, d = r * (.6 + Math.random() * .6), sx = x + Math.cos(a) * d, sy = y + Math.sin(a) * d; this.spawn({ x: sx, y: sy, vx: (x - sx) / 38, vy: (y - sy) / 38, g: 0, drag: 1.012, decay: .026, kind: "streak", size: 3, color }); }
+  },
+  rain(n, colors, dur = 1) { for (let i = 0; i < n; i++) this.spawn({ x: Math.random() * innerWidth, y: -20 - Math.random() * innerHeight * .5, vx: (Math.random() - .5) * 2, vy: 2 + Math.random() * 3, g: .04, drag: .995, decay: .0045 / dur, kind: "confetti", size: 5 + Math.random() * 4, vr: (Math.random() - .5) * .35, color: colors[i % colors.length] }); },
+  ring(x, y, color, maxR, width = 6, dur = 600, delay = 0) { this.fx.push({ type: "ring", x, y, color, maxR, width, dur, t0: performance.now() + delay }); this.run(); },
+  bolt(x, y, ang, len, color, dur = 300, delay = 0) { this.fx.push({ type: "bolt", x, y, ang, len, color, dur, t0: performance.now() + delay }); this.run(); },
+  firework(x, y, colors) {
+    this.spawn({ x, y: innerHeight + 10, vx: 0, vy: -(innerHeight + 10 - y) / 26, g: 0, drag: 1, decay: 1 / 26, kind: "streak", size: 3, color: "#fff7c2" });
+    this.later(430, () => { this.burst(x, y, { n: 70, colors, kind: "streak", speed: 9, g: .07, decay: .013, size: 3 }); this.burst(x, y, { n: 24, colors: ["#fff"], kind: "dot", speed: 5, g: .05, size: 3 }); this.ring(x, y, colors[0], 90, 4, 450); Sound.pop(); });
+  },
+  run() { if (!this.running) { this.running = true; this.size(); requestAnimationFrame((t) => this.step(t)); } },
+  step(t) {
+    const g = this.g; g.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); g.clearRect(0, 0, innerWidth, innerHeight);
+    this.ps = this.ps.filter((p) => p.life > 0);
+    for (const p of this.ps) {
+      p.vx *= p.drag; p.vy = p.vy * p.drag + p.g; p.x += p.vx; p.y += p.vy; p.life -= p.decay; p.rot += p.vr;
+      g.globalAlpha = Math.max(0, Math.min(1, p.life * (p.kind === "smoke" ? .45 : 1.4))); g.fillStyle = p.color; g.strokeStyle = p.color;
+      g.save(); g.translate(p.x, p.y);
+      if (p.kind === "star") { g.rotate(p.rot); g.beginPath(); for (let i = 0; i < 10; i++) { const rr = i % 2 ? p.size * .45 : p.size * 1.3; g.lineTo(Math.cos(i * Math.PI / 5) * rr, Math.sin(i * Math.PI / 5) * rr); } g.fill(); }
+      else if (p.kind === "diamond") { g.rotate(p.rot); g.beginPath(); g.moveTo(0, -p.size * 1.4); g.lineTo(p.size * .8, 0); g.lineTo(0, p.size * 1.4); g.lineTo(-p.size * .8, 0); g.fill(); }
+      else if (p.kind === "confetti" || p.kind === "page") { g.rotate(p.rot); g.scale(1, Math.cos(p.rot * 2)); g.fillRect(-p.size, -p.size * (p.kind === "page" ? .7 : .4), p.size * 2, p.size * (p.kind === "page" ? 1.4 : .8)); }
+      else if (p.kind === "streak") { const sp = Math.hypot(p.vx, p.vy) || 1; g.lineWidth = p.size * Math.max(.3, p.life); g.lineCap = "round"; g.beginPath(); g.moveTo(0, 0); g.lineTo(-p.vx / sp * p.size * 4 * (1 + sp * .3), -p.vy / sp * p.size * 4 * (1 + sp * .3)); g.stroke(); }
+      else if (p.kind === "smoke") { g.beginPath(); g.arc(0, 0, p.size * (2.4 - p.life * 1.4), 0, 7); g.fill(); }
+      else if (p.kind === "glyph") { g.rotate(p.rot * .3); g.font = `800 ${p.size}px Sora, sans-serif`; g.textAlign = "center"; g.textBaseline = "middle"; g.lineWidth = p.size * .12; g.strokeStyle = "rgba(0,0,0,.5)"; g.strokeText(p.ch, 0, 0); g.fillText(p.ch, 0, 0); }
+      else { g.beginPath(); g.arc(0, 0, Math.max(.1, p.size * p.life), 0, 7); g.fill(); }
+      g.restore();
+    }
+    this.fx = this.fx.filter((f) => t < f.t0 + f.dur);
+    for (const f of this.fx) {
+      const k = (t - f.t0) / f.dur; if (k < 0) continue;
+      if (f.type === "ring") { const e = 1 - Math.pow(1 - k, 3); g.globalAlpha = 1 - k; g.strokeStyle = f.color; g.lineWidth = f.width * (1 - k) + 1; g.beginPath(); g.arc(f.x, f.y, f.maxR * e, 0, 7); g.stroke(); }
+      else if (f.type === "bolt") {
+        g.globalAlpha = (1 - k) * (Math.random() > .25 ? 1 : .3); g.strokeStyle = f.color; g.shadowColor = f.color; g.shadowBlur = 18; g.lineWidth = 3; g.lineJoin = "round";
+        g.beginPath(); let x = f.x, y = f.y; g.moveTo(x, y);
+        const segs = 9; for (let i = 1; i <= segs; i++) { const a = f.ang + (Math.random() - .5) * 1.1, l = f.len / segs; x += Math.cos(a) * l; y += Math.sin(a) * l; g.lineTo(x, y); }
+        g.stroke(); g.lineWidth = 1.2; g.strokeStyle = "#fff"; g.stroke(); g.shadowBlur = 0;
+      }
+    }
+    g.globalAlpha = 1;
+    if (this.ps.length || this.fx.length) requestAnimationFrame((tt) => this.step(tt)); else { this.running = false; g.clearRect(0, 0, innerWidth, innerHeight); }
+  },
+};
+Stage.init();
+
+const Celebrate = {
+  // Returns how long the show runs, so autoplay can wait for it.
+  play(k, sq, board, label) {
+    if (!CFG.fx) { Sound.cls(k); return 0; }
+    Stage.clear();
+    const r = board.wrap.getBoundingClientRect(), [fx, fy] = board.center(sq);
+    const W = r.width, x = r.left + fx * W, y = r.top + fy * W, cx = r.left + W / 2, cy = r.top + W / 2;
+    const f = this[k]; return f ? f.call(this, { board, W, x, y, cx, cy, fx, fy, label }) : 0;
+  },
+  float(cls, k, x, y, s) { return Stage.add("st-float " + cls, { left: x - s / 2, top: y - s / 2, width: s, height: s }, icon(k)); },
+  punch(board) { board.wrap.classList.remove("punch"); void board.wrap.offsetWidth; board.wrap.classList.add("punch"); },
+
+  brilliant({ board, W, x, y, cx, cy, fx, fy }) {
+    const C = ["#26c2a3", "#7ff5e0", "#ffffff", "#ffe27a", "#b4fff1"];
+    Stage.el.classList.add("skippable");
+    // 1. Slow-motion: spotlight on the piece, camera pushes in, energy gets sucked into the square.
+    const vig = Stage.add("st-vig", { background: `radial-gradient(circle at ${x}px ${y}px, transparent ${W * .06}px, rgba(0,12,16,.86) ${W * .34}px)` });
+    board.wrap.style.transformOrigin = `${fx * 100}% ${fy * 100}%`; board.wrap.classList.add("zoomin");
+    Sound.riser(.8);
+    Stage.implode(x, y, W * .7, 60, "#7ff5e0");
+    Stage.later(250, () => Stage.implode(x, y, W * .5, 40, "#ffffff"));
+    // 2. Impact.
+    Stage.later(800, () => {
+      board.wrap.classList.remove("zoomin"); vig.remove();
+      Stage.add("st-flash", {});
+      Sound.boom(); Sound.pad([261.6, 329.6, 392, 523.3, 659.3, 784], 2.6, .05); Sound.sparkle(14, .1);
+      const rv = document.querySelector(".review"); if (rv) { rv.classList.remove("quake"); void rv.offsetWidth; rv.classList.add("quake"); }
+      if (navigator.vibrate) try { navigator.vibrate([40, 30, 80, 30, 180]); } catch (_) {}
+      Stage.ring(x, y, "#ffffff", W * 1.3, 16, 700); Stage.ring(x, y, "#26c2a3", W * 1.8, 12, 900, 90); Stage.ring(x, y, "#ffe27a", W * 2.3, 8, 1100, 180);
+      Stage.burst(x, y, { n: 90, colors: C, kind: "star", speed: 16, g: .18, size: 6, decay: .011 });
+      Stage.burst(x, y, { n: 60, colors: C, kind: "diamond", speed: 13, g: .12, size: 5, decay: .01 });
+      Stage.burst(x, y, { n: 70, colors: C, kind: "streak", speed: 24, g: .05, size: 3, decay: .02 });
+      for (let i = 0; i < 8; i++) Stage.bolt(x, y, i * Math.PI / 4 + Math.random() * .5, W * (.45 + Math.random() * .4), i % 2 ? "#7ff5e0" : "#ffffff", 380, i * 25);
+      // 3. Giant badge with god-rays and shimmering title.
+      const s = W * .44;
+      Stage.add("st-halo", { left: cx - W * .7, top: cy - W * .78, width: W * 1.4, height: W * 1.4, "--c": "rgba(38,194,163,.55)" });
+      Stage.add("st-rays", { left: cx - W * .85, top: cy - W * .93, width: W * 1.7, height: W * 1.7, "--c": "rgba(127,245,224,.55)" });
+      Stage.add("st-rays rev", { left: cx - W * .6, top: cy - W * .68, width: W * 1.2, height: W * 1.2, "--c": "rgba(255,226,122,.45)" });
+      Stage.add("st-stamp wobble", { left: cx - s / 2, top: cy - s / 2 - W * .08, width: s, height: s }, icon("brilliant"));
+      Stage.text("BRILHANTE!!", cx, cy + W * .27, Math.min(W * .14, 76), "shimmer", "#26c2a3", "#0b4d42", 55, 150);
+      Stage.later(400, () => Stage.rain(160, C, 1.1));
+    });
+    // 4. Fireworks over the board.
+    [1350, 1700, 2050, 2400, 2700].forEach((t, i) => Stage.later(t, () => Stage.firework(r(i, cx, W), cy - W * (.25 + Math.random() * .35), [C[i % C.length], C[(i + 2) % C.length], "#ffffff"])));
+    function r(i, c, w) { return c + (i % 2 ? 1 : -1) * w * (.15 + Math.random() * .3); }
+    Stage.fadeAll(3300);
+    return 3700;
+  },
+
+  excellent({ board, W, x, y, cx, cy, label }) {
+    const C = ["#81b64c", "#b6ea7a", "#ffffff", "#ffe27a", "#d8ff9e"];
+    this.punch(board); board.glow("#81b64c");
+    Sound.whoosh(); Sound.chord([523.3, 659.3, 784, 1046.5], .12); Sound.sparkle(8, .25);
+    Stage.ring(x, y, "#b6ea7a", W * .5, 8, 500);
+    Stage.burst(x, y, { n: 36, colors: C, kind: "star", speed: 10, g: .2, size: 5 });
+    Stage.later(120, () => {
+      const s = W * .36;
+      Stage.add("st-halo", { left: cx - W * .55, top: cy - W * .62, width: W * 1.1, height: W * 1.1, "--c": "rgba(129,182,76,.45)" });
+      Stage.add("st-rays", { left: cx - W * .7, top: cy - W * .77, width: W * 1.4, height: W * 1.4, "--c": "rgba(182,234,122,.5)" });
+      Stage.add("st-stamp wobble", { left: cx - s / 2, top: cy - s / 2 - W * .07, width: s, height: s }, icon("excellent"));
+      Stage.ring(cx, cy, "#ffffff", W * .9, 10, 600); Stage.ring(cx, cy, "#81b64c", W * 1.2, 8, 750, 100);
+      Stage.text(label || "EXCELENTE!", cx, cy + W * .24, Math.min(W * .115, 62), "wave", "#81b64c", "#2b4a12", 45, 80);
+    });
+    // Star fountain from the bottom of the board.
+    for (let i = 0; i < 6; i++) Stage.later(150 + i * 140, () => {
+      Stage.burst(cx - W * .3, cy + W * .5, { n: 14, colors: C, kind: i % 2 ? "star" : "diamond", speed: 15, g: .3, size: 5, angle: -Math.PI / 2 + .25, spread: .7, decay: .012 });
+      Stage.burst(cx + W * .3, cy + W * .5, { n: 14, colors: C, kind: i % 2 ? "diamond" : "star", speed: 15, g: .3, size: 5, angle: -Math.PI / 2 - .25, spread: .7, decay: .012 });
+    });
+    Stage.fadeAll(1700);
+    return 2100;
+  },
+
+  great({ board, W, x, y, cx, cy }) {
+    const C = ["#5c8bb0", "#9cc7ec", "#ffffff", "#cfe6ff"];
+    this.punch(board); board.glow("#5c8bb0");
+    Sound.bell(988, .6, .12, .05); Sound.bell(1480, .7, .1, .15); Sound.sparkle(6, .2);
+    Stage.ring(x, y, "#9cc7ec", W * .6, 8, 550);
+    Stage.burst(x, y, { n: 40, colors: C, kind: "streak", speed: 14, g: .08, size: 3 });
+    for (let i = 0; i < 4; i++) Stage.bolt(x, y, i * Math.PI / 2 + .4, W * .3, "#9cc7ec", 260, i * 30);
+    const s = W * .28;
+    Stage.add("st-rays", { left: cx - W * .5, top: cy - W * .55, width: W, height: W, "--c": "rgba(156,199,236,.45)" });
+    Stage.add("st-stamp", { left: cx - s / 2, top: cy - s / 2 - W * .05, width: s, height: s }, icon("great"));
+    Stage.text("ÓTIMO!", cx, cy + W * .2, Math.min(W * .11, 58), "wave", "#5c8bb0", "#1d3a52", 50, 60);
+    Stage.fadeAll(1300);
+    return 1700;
+  },
+
+  best({ W, x, y, label }) {
+    const C = ["#81b64c", "#b6ea7a", "#ffffff"];
+    Sound.bell(1568, .5, .08, .1); Sound.sparkle(4, .2);
+    this.float("fl-up", "best", x, y, W * .17);
+    Stage.ring(x, y, "#81b64c", W * .3, 6, 450);
+    Stage.burst(x, y, { n: 22, colors: C, kind: "star", speed: 7, g: .12, size: 4 });
+    if (label) Stage.text(label, x, y - W * .2, Math.min(W * .07, 36), "wave", "#81b64c", "#2b4a12", 40);
+    Stage.fadeAll(1000);
+    return 900;
+  },
+
+  good({ W, x, y }) {
+    Sound.bell(1319, .35, .05, .1);
+    const s = W * .14;
+    Stage.add("st-draw fade", { left: x - s / 2, top: y - s / 2, width: s, height: s, "--fo": ".6s" }, `<svg viewBox="0 0 24 24" width="100%" height="100%"><circle cx="12" cy="12" r="11" fill="#95af8a" opacity=".9"/><path d="M6.5 12.5l3.5 3.5 7-7.5" pathLength="1" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="--d:.35s;--dl:.1s"/></svg>`);
+    Stage.burst(x, y, { n: 10, colors: ["#95af8a", "#ffffff"], kind: "dot", speed: 4, g: .08, size: 3 });
+    return 500;
+  },
+
+  book({ W, x, y }) {
+    Sound.pageFlip();
+    this.float("fl-flip", "book", x, y, W * .16);
+    for (let i = 0; i < 10; i++) Stage.spawn({ x, y, vx: (Math.random() - .5) * 5, vy: -2 - Math.random() * 4, g: .06, kind: "page", size: 6, decay: .014, color: i % 2 ? "#f2e6cf" : "#d9c29a", vr: (Math.random() - .5) * .3 });
+    return 300;
+  },
+
+  forced({ W, x, y }) {
+    Sound.whoosh();
+    this.float("fl-dash", "forced", x, y, W * .15);
+    return 300;
+  },
+
+  inaccuracy({ W, x, y }) {
+    Sound.tone(587, .16, { type: "triangle", g: .1, at: .05 }); Sound.tone(554, .3, { type: "triangle", g: .1, at: .2 });
+    this.float("fl-wob", "inaccuracy", x, y, W * .17);
+    for (let i = 0; i < 6; i++) Stage.later(i * 90, () => Stage.spawn({ x: x + (Math.random() - .5) * W * .15, y, vx: (Math.random() - .5) * 1.5, vy: -2.2 - Math.random() * 1.5, g: -.01, kind: "glyph", ch: "?", size: W * (.05 + Math.random() * .03), decay: .016, color: "#f7c631" }));
+    return 700;
+  },
+
+  mistake({ board, W, x, y }) {
+    Sound.thud(); Sound.tone(466, .18, { type: "square", g: .045, at: .15 }); Sound.tone(392, .34, { type: "square", g: .045, at: .32 });
+    this.float("fl-drop", "mistake", x, y - W * .02, W * .18);
+    Stage.later(350, () => { Stage.burst(x, y, { n: 22, colors: ["#ffa459", "#ffcf9e", "#8a5a3a"], kind: "smoke", speed: 2.5, g: -.03, size: 7, decay: .016 }); Stage.ring(x, y, "#ffa459", W * .35, 6, 500); });
+    board.shake();
+    return 900;
+  },
+
+  miss({ W, x, y }) {
+    Sound.whoosh(); Sound.tone(784, .3, { type: "triangle", g: .1, at: .1, to: 330 });
+    const s = W * .2;
+    Stage.add("st-draw fade", { left: x - s / 2, top: y - s / 2, width: s, height: s, "--fo": ".75s" }, `<svg viewBox="0 0 24 24" width="100%" height="100%" style="filter:drop-shadow(0 0 6px #ff7769)"><line x1="3" y1="3" x2="21" y2="21" pathLength="1" stroke="#ff7769" stroke-width="4.5" stroke-linecap="round" style="--d:.18s"/><line x1="21" y1="3" x2="3" y2="21" pathLength="1" stroke="#ff7769" stroke-width="4.5" stroke-linecap="round" style="--d:.18s;--dl:.16s"/></svg>`);
+    Stage.later(250, () => Stage.burst(x, y, { n: 18, colors: ["#ff7769", "#ffc2b8"], kind: "smoke", speed: 2.5, g: -.02, size: 6 }));
+    return 900;
+  },
+
+  blunder({ board, W, x, y, cx, cy, fx, fy }) {
+    Sound.glass(); Sound.sadTrombone(.25); Sound.boom(.4);
+    if (navigator.vibrate) try { navigator.vibrate([90, 50, 140, 50, 220]); } catch (_) {}
+    const rect = board.wrap.getBoundingClientRect();
+    Stage.add("st-vig pulse", { background: `radial-gradient(circle at ${x}px ${y}px, rgba(250,65,45,.15) ${W * .1}px, rgba(120,0,0,.6) ${W * .8}px)` });
+    // Cracked-glass lines spreading from the square.
+    let paths = "";
+    for (let i = 0; i < 9; i++) {
+      let px = fx * 100, py = fy * 100, d = `M${px} ${py}`, a = i * (Math.PI * 2 / 9) + Math.random() * .5;
+      for (let j = 0; j < 6; j++) { a += (Math.random() - .5) * .9; px += Math.cos(a) * (6 + Math.random() * 9); py += Math.sin(a) * (6 + Math.random() * 9); d += ` L${px.toFixed(1)} ${py.toFixed(1)}`; }
+      paths += `<path d="${d}" pathLength="1" fill="none" stroke="#fff" stroke-width=".6" style="--d:.3s;--dl:${(i * .02).toFixed(2)}s"/><path d="${d}" pathLength="1" fill="none" stroke="rgba(0,0,0,.45)" stroke-width="1.4" style="--d:.3s;--dl:${(i * .02).toFixed(2)}s;opacity:.5"/>`;
+    }
+    Stage.add("st-draw fade", { left: rect.left, top: rect.top, width: W, height: W, "--fo": "1.5s" }, `<svg viewBox="0 0 100 100" width="100%" height="100%" style="overflow:visible">${paths}</svg>`);
+    board.shake();
+    const rv = document.querySelector(".review"); if (rv) { rv.classList.remove("quake"); void rv.offsetWidth; rv.classList.add("quake"); }
+    Stage.burst(x, y, { n: 40, colors: ["#fa412d", "#5a1410", "#ff8f7f"], kind: "smoke", speed: 3, g: -.03, size: 8, decay: .012 });
+    Stage.burst(x, y, { n: 26, colors: ["#3a0d08", "#fa412d", "#ffffff"], kind: "diamond", speed: 9, g: .3, size: 4 });
+    const s = W * .3;
+    Stage.add("st-stamp heavy", { left: cx - s / 2, top: cy - s / 2 - W * .06, width: s, height: s }, icon("blunder"));
+    Stage.text("CAPIVARADA!", cx, cy + W * .22, Math.min(W * .105, 56), "sag", "#fa412d", "#5a1410", 50, 200);
+    Stage.fadeAll(1800);
+    return 2200;
+  },
+};
+
 /* ================= Engine ================= */
 class Engine {
   constructor() { this.listeners = []; this.queue = Promise.resolve(); this.ready = this.boot(); }
@@ -895,7 +1217,7 @@ let rvBoard = null, anBoard = null;
 /* ================= Views ================= */
 const VIEWS = ["vHome", "vList", "vAnalyze", "vSummary", "vReview", "vTrainEnd"];
 function show(v) {
-  stopAuto();
+  stopAuto(); Stage.clear();
   VIEWS.forEach((x) => { $(x).hidden = x !== v; });
   $("backBtn").hidden = v === "vHome";
   $("dock").hidden = v !== "vReview";
@@ -1205,7 +1527,7 @@ function moveSound(m) {
 }
 function matedKing(fen) { const c = new Chess(fen); if (!c.in_checkmate()) return null; let sq = null; c.board().forEach((r, ri) => r.forEach((p, fi) => { if (p && p.type === "k" && p.color === c.turn()) sq = "abcdefgh"[fi] + (8 - ri); })); return sq; }
 function go(i, animate = true) {
-  S.lineTok++;
+  S.lineTok++; Stage.clear();
   i = Math.max(0, Math.min(S.plies.length, i));
   const prevIdx = S.idx; S.idx = i;
   const fwd = i === prevIdx + 1, back = i === prevIdx - 1, opts = {};
@@ -1218,9 +1540,10 @@ function go(i, animate = true) {
   if (animate && fwd) Object.assign(opts, animFor(S.plies[i - 1], false));
   else if (animate && back) Object.assign(opts, animFor(S.plies[i], true));
   rvBoard.render(S.fens[i], opts);
+  S.celebMs = 0;
   if (animate && fwd) {
     const m = S.plies[i - 1], k = S.cls[i - 1].k;
-    moveSound(m); Sound.cls(k); rvBoard.landFx(m); rvBoard.effect(m.to, k);
+    moveSound(m); rvBoard.landFx(m); S.celebMs = Celebrate.play(k, m.to, rvBoard);
     if (m.san.includes("#")) setTimeout(() => rvBoard.confetti(), 300);
   } else if (animate && back) Sound.move();
   renderEval(); renderCoach(); markStrip(); drawGraph($("rvGraph"), true);
@@ -1339,14 +1662,14 @@ function attachSwipe(el) {
 /* ---- Autoplay ---- */
 const PLAY_ICON = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
 const PAUSE_ICON = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
-function stopAuto() { if (S.auto) { clearInterval(S.auto); S.auto = null; } $("dPlay").innerHTML = PLAY_ICON; $("dPlay").classList.remove("playing"); }
+function stopAuto() { if (S.auto) { clearTimeout(S.auto); S.auto = null; } $("dPlay").innerHTML = PLAY_ICON; $("dPlay").classList.remove("playing"); }
 function toggleAuto() {
   if (S.auto) return stopAuto();
   exitRetry();
   if (S.idx >= S.plies.length) go(0, false);
   $("dPlay").innerHTML = PAUSE_ICON; $("dPlay").classList.add("playing");
-  const step = () => { if (S.idx >= S.plies.length) return stopAuto(); go(S.idx + 1); };
-  step(); S.auto = setInterval(step, 1500);
+  const step = () => { if (S.idx >= S.plies.length) return stopAuto(); go(S.idx + 1); S.auto = setTimeout(step, 1300 + (S.celebMs || 0)); };
+  step();
 }
 $("dPlay").innerHTML = PLAY_ICON;
 $("dFirst").onclick = () => { stopAuto(); exitRetry(); Sound.ui(); go(0, false); };
@@ -1432,7 +1755,7 @@ async function onRetryMove(uci) {
     r.solved = true;
     if (S.mode === "train") { S.train.results.push(r.hint ? 1 : r.tries ? 2 : 3); updateScore(); }
     rvBoard.render(after.fen(), { hl: [m.from, m.to], badge: { sq: m.to, k: "best" } });
-    Sound.correct(); rvBoard.effect(m.to, "best"); rvBoard.toast(uci === cl.best ? "Correto!" : "Também serve!", CLS.best.color); setTimeout(() => rvBoard.confetti(), 250);
+    Sound.correct(); Celebrate.play("excellent", m.to, rvBoard, uci === cl.best ? "CORRETO!" : "TAMBÉM SERVE!");
     renderRetryCoach(`${uci === cl.best ? "Isso mesmo!" : "Boa! Esse lance também funciona."} ${moveRef(m)}${r.tries ? `, na ${r.tries + 1}ª tentativa.` : ", de primeira!"}`, "star");
   } else {
     r.tries++;

@@ -28,6 +28,7 @@ Também dá para colar um PGN qualquer em **Ou cole um PGN**.
 - Mascote treinador com expressões que mudam conforme o lance.
 - Sons sintetizados (madeira, captura, xeque, roque, promoção, mate, sino de acerto, trombone triste na capivarada) com eco leve.
 - Efeitos: peças deslizam e "pousam", poeira ao pousar, estilhaços na captura, estrelas e brilho no lance brilhante, tremida e flash na capivarada, rei tombando e confete no mate.
+- Animação própria para cada classificação: Brilhante (câmera lenta, holofote, explosão com raios, ondas de choque, selo gigante com feixes de luz, título brilhando, chuva de confete e fogos de artifício; toque para pular), Excelente (joinha gigante com feixes, chafariz de estrelas e acorde), Ótimo (selo azul com faíscas), Melhor (estrela que sobe), Bom (check que se desenha), Teoria (livro que abre e solta páginas), Forçado (seta que passa), Imprecisão (?! balançando e interrogações flutuando), Erro (? que cai e quica), Chance perdida (X riscado), Capivarada (vidro trincando, tela tremendo, tela vermelha e letras que desabam).
 - Ajustes: 6 temas de tabuleiro, 2 conjuntos de peças, sons, efeitos e coordenadas.
 
 ## Detalhes técnicos
