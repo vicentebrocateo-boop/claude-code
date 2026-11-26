@@ -19,16 +19,21 @@ Também dá para colar um PGN qualquer em **Ou cole um PGN**.
 
 ## Experiência
 
-- Comentários em português comum ("Esse cavalo pegando o peão é uma capivarada! O melhor era capturar o peão com o bispo"), sem notação.
-- Sons gerados no navegador (lance, captura, xeque, roque, mate e um som para cada classificação), com botão para desligar.
-- Efeitos: peças deslizam, peças capturadas somem girando, partículas para lances brilhantes e ótimos, tremida e flash vermelho na capivarada, confete no mate, vibração no celular.
-- Tela de resumo com anéis de precisão animados, contagem de lances e atalho para o momento mais caro.
-- Botão estrela pula para o próximo momento importante; deslize no tabuleiro para navegar.
+- Comentários que dizem exatamente qual peça: cada peça citada vira uma etiqueta com o desenho e as casas (ex.: cavalo e5→f7). Tocar nela destaca a peça no tabuleiro.
+- **Tentar de novo**: nos seus erros, você joga no tabuleiro (tocar ou arrastar) para achar o lance certo, com dica e solução.
+- **Treinar meus erros**: todos os seus erros da partida viram uma sequência de desafios com pontos e até 3 estrelas.
+- **Ver o melhor lance** e **E agora?**: animam a sequência do motor no tabuleiro.
+- Reprodução automática, botão para o próximo momento-chave, deslizar no tabuleiro para navegar.
+- Resumo com precisão, desempenho estimado, contagem de lances, nota por fase (abertura, meio-jogo, final) e momentos-chave.
+- Mascote treinador com expressões que mudam conforme o lance.
+- Sons sintetizados (madeira, captura, xeque, roque, promoção, mate, sino de acerto, trombone triste na capivarada) com eco leve.
+- Efeitos: peças deslizam e "pousam", poeira ao pousar, estilhaços na captura, estrelas e brilho no lance brilhante, tremida e flash na capivarada, rei tombando e confete no mate.
+- Ajustes: 6 temas de tabuleiro, 2 conjuntos de peças, sons, efeitos e coordenadas.
 
 ## Detalhes técnicos
 
 - Dados: API pública do chess.com (`api.chess.com/pub/player/<user>/games/archives`).
 - Motor: Stockfish 10 em WebAssembly (`stockfish@10.0.2`, via jsDelivr) dentro de um Web Worker, com MultiPV 2.
 - Regras: `chess.js` 0.10.3.
-- Peças: conjunto cburnett (Colin M.L. Burnett, CC BY-SA 3.0), embutido como SVG.
+- Peças: Staunty (sadsnake1, CC BY-NC-SA 4.0, via cm-chessboard) e cburnett (Colin M.L. Burnett, CC BY-SA 3.0), embutidas como SVG.
 - Chance de vitória: `50 + 50 * (2 / (1 + e^(-0.00368208 * cp)) - 1)`. Limiares de perda: < 2 excelente, < 5 bom, < 10 imprecisão, < 20 erro, ≥ 20 capivarada.
