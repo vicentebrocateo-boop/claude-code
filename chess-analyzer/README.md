@@ -19,6 +19,14 @@ Também dá para colar um PGN qualquer em **Ou cole um PGN**.
 
 ## Experiência
 
+- **Tabuleiro fluido**: as peças são elementos fixos que deslizam entre posições (lances, saltos, giro do tabuleiro), sem recriar nada; partículas com física por tempo real e brilhos em sprites leves.
+- **Quiz**: ligue o Quiz e tente adivinhar a nota de cada lance antes de ver; pontos, acertos exatos e combo.
+- **Explorar**: mexa as peças livremente a partir de qualquer posição, com avaliação do motor, seta de sugestão, desfazer e voltar à partida.
+- **Melhores continuações**: as duas linhas do motor para a posição atual, com avaliação; toque para ver no tabuleiro.
+- **Relógio e tempo**: relógio de cada jogador em cada lance, tempo gasto por lance, aviso de lances apressados e um resumo de tempo.
+- **Ponto de virada** e início do meio-jogo e do final marcados no gráfico, com atalhos.
+- Velocidade da reprodução automática ajustável.
+
 - **Todas as partidas do perfil**: carrega mês a mês (botões "Carregar mês" e "Carregar tudo"), com abas **Por dia** (agrupadas por data, com placar do dia), **Mais icônicas** (ranking por zebras, xeque-mates, miniaturas, maratonas e força do adversário), **Melhores vitórias** e **Analisadas**; filtros por ritmo e resultado e busca por adversário ou abertura.
 - **Tipo de jogada** em cada lance (garfo, cravada, espeto, xeque descoberto, sacrifício, peça pendurada, mate em N, etc.), mostrado no comentário e embaixo da animação.
 - **Sequência em chamas** quando alguém faz 3+ lances bons seguidos.
