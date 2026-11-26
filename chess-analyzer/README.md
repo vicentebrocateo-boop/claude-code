@@ -19,6 +19,13 @@ Também dá para colar um PGN qualquer em **Ou cole um PGN**.
 
 ## Experiência
 
+- **Todas as partidas do perfil**: carrega mês a mês (botões "Carregar mês" e "Carregar tudo"), com abas **Por dia** (agrupadas por data, com placar do dia), **Mais icônicas** (ranking por zebras, xeque-mates, miniaturas, maratonas e força do adversário), **Melhores vitórias** e **Analisadas**; filtros por ritmo e resultado e busca por adversário ou abertura.
+- **Tipo de jogada** em cada lance (garfo, cravada, espeto, xeque descoberto, sacrifício, peça pendurada, mate em N, etc.), mostrado no comentário e embaixo da animação.
+- **Sequência em chamas** quando alguém faz 3+ lances bons seguidos.
+- **Rejogar a partida**: jogue de novo cada lance seu, ganhe nota em cada um e compare a precisão com a da partida.
+- **XP, níveis e 17 conquistas**, salvos no navegador; botão de troféu no topo.
+- **Análises salvas**: reabrir uma partida já analisada é instantâneo.
+
 - Comentários que dizem exatamente qual peça: cada peça citada vira uma etiqueta com o desenho e as casas (ex.: cavalo e5→f7). Tocar nela destaca a peça no tabuleiro.
 - **Tentar de novo**: nos seus erros, você joga no tabuleiro (tocar ou arrastar) para achar o lance certo, com dica e solução.
 - **Treinar meus erros**: todos os seus erros da partida viram uma sequência de desafios com pontos e até 3 estrelas.
